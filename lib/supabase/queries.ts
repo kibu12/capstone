@@ -144,4 +144,165 @@ export async function clearExistingCareerData(userId: string) {
   await supabase.from('skill_gaps').delete().eq('user_id', userId);
   await supabase.from('learning_roadmap').delete().eq('user_id', userId);
   await supabase.from('projects').delete().eq('user_id', userId);
+  await supabase.from('courses').delete().eq('user_id', userId);
 }
+
+// LEARNING INTELLIGENCE QUERIES
+
+export async function getCourses(userId: string) {
+  const { data, error } = await supabase
+    .from('courses')
+    .select('*')
+    .eq('user_id', userId)
+    .order('order_index', { ascending: true });
+  if (error) return [];
+  return data || [];
+}
+
+export async function saveCourses(userId: string, courses: any[]) {
+  const rows = courses.map(c => ({ ...c, user_id: userId }));
+  const { data, error } = await supabase.from('courses').insert(rows).select();
+  if (error) throw error;
+  return data || [];
+}
+
+export async function updateCourseProgress(courseId: string, progress: number, status: string) {
+  const { error } = await supabase
+    .from('courses')
+    .update({ progress, status })
+    .eq('id', courseId);
+  if (error) throw error;
+}
+
+export async function getLearningResources(userId: string) {
+  const { data, error } = await supabase
+    .from('learning_resources')
+    .select('*')
+    .eq('user_id', userId)
+    .order('relevance_score', { ascending: false });
+  if (error) return [];
+  return data || [];
+}
+
+export async function saveLearningResources(userId: string, resources: any[]) {
+  const rows = resources.map(r => ({ ...r, user_id: userId }));
+  const { error } = await supabase.from('learning_resources').insert(rows);
+  if (error) throw error;
+}
+
+export async function getStudyMaterials(userId: string) {
+  const { data, error } = await supabase
+    .from('study_materials')
+    .select('*')
+    .eq('user_id', userId);
+  if (error) return [];
+  return data || [];
+}
+
+export async function saveStudyMaterials(userId: string, materials: any[]) {
+  const rows = materials.map(m => ({ ...m, user_id: userId }));
+  const { error } = await supabase.from('study_materials').insert(rows);
+  if (error) throw error;
+}
+
+export async function getQuizzes(userId: string) {
+  const { data, error } = await supabase
+    .from('quizzes')
+    .select('*, quiz_questions(*)')
+    .eq('user_id', userId);
+  if (error) return [];
+  return data || [];
+}
+
+export async function saveQuiz(userId: string, quiz: any, questions: any[]) {
+  const { data, error } = await supabase
+    .from('quizzes')
+    .insert([{ ...quiz, user_id: userId }])
+    .select()
+    .single();
+
+  if (error) throw error;
+
+  if (data && questions.length > 0) {
+    const qRows = questions.map(q => ({ ...q, quiz_id: data.id }));
+    await supabase.from('quiz_questions').insert(qRows);
+  }
+  return data;
+}
+
+export async function saveQuizAttempt(userId: string, attempt: any) {
+  const { error } = await supabase
+    .from('quiz_attempts')
+    .insert([{ ...attempt, user_id: userId }]);
+  if (error) throw error;
+}
+
+export async function getConceptPerformances(userId: string) {
+  const { data, error } = await supabase
+    .from('concept_performance')
+    .select('*')
+    .eq('user_id', userId);
+  if (error) return [];
+  return data || [];
+}
+
+export async function updateConceptPerformance(userId: string, conceptName: string, skillName: string, isCorrect: boolean) {
+  const { data } = await supabase
+    .from('concept_performance')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('concept_name', conceptName)
+    .single();
+
+  if (data) {
+    const newCount = (data.attempts_count || 1) + 1;
+    const currentScore = data.mastery_score || 50;
+    const delta = isCorrect ? 15 : -20;
+    const newScore = Math.min(100, Math.max(0, currentScore + delta));
+
+    let status = 'Developing';
+    if (newScore >= 90) status = 'Mastered';
+    else if (newScore >= 75) status = 'Strong';
+    else if (newScore >= 60) status = 'Developing';
+    else if (newScore >= 40) status = 'Weak';
+    else status = 'Critical';
+
+    await supabase
+      .from('concept_performance')
+      .update({ mastery_score: newScore, status, attempts_count: newCount, last_tested_at: new Date().toISOString() })
+      .eq('id', data.id);
+  } else {
+    const initialScore = isCorrect ? 70 : 35;
+    const status = isCorrect ? 'Developing' : 'Weak';
+    await supabase
+      .from('concept_performance')
+      .insert([{
+        user_id: userId,
+        concept_name: conceptName,
+        skill_name: skillName,
+        mastery_score: initialScore,
+        status,
+        attempts_count: 1
+      }]);
+  }
+}
+
+export async function getInterviewAssessment(userId: string) {
+  const { data, error } = await supabase
+    .from('interview_assessments')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+    .limit(1);
+
+  if (error || !data || data.length === 0) return null;
+  return data[0];
+}
+
+export async function saveInterviewAssessment(userId: string, assessment: any) {
+  const { error } = await supabase
+    .from('interview_assessments')
+    .insert([{ ...assessment, user_id: userId }]);
+  if (error) throw error;
+}
+

@@ -3,8 +3,9 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
-import { clearExistingCareerData, saveAssessment, saveCareerRecommendation, saveSkillGaps, saveRoadmapPhases, saveProjects, updateProfile } from '@/lib/supabase/queries';
+import { clearExistingCareerData, saveAssessment, saveCareerRecommendation, saveSkillGaps, saveRoadmapPhases, saveProjects, updateProfile, saveCourses, saveLearningResources, saveStudyMaterials, saveQuiz, saveInterviewAssessment } from '@/lib/supabase/queries';
 import { runCareerAnalysis } from '@/lib/agents/orchestrator';
+import { runLearningAgents } from '@/lib/agents/learning-agents';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
@@ -17,6 +18,14 @@ export default function AssessmentWizard() {
   const [experience, setExperience] = useState('Beginner');
   
   const [interests, setInterests] = useState<string[]>([]);
+  const [customInterest, setCustomInterest] = useState('');
+
+  const addCustomInterest = () => {
+    if (customInterest.trim() && !interests.includes(customInterest.trim())) {
+      setInterests(prev => [...prev, customInterest.trim()]);
+      setCustomInterest('');
+    }
+  };
   const [skills, setSkills] = useState<string[]>([]);
   const [customSkill, setCustomSkill] = useState('');
   
@@ -146,6 +155,29 @@ export default function AssessmentWizard() {
         career_goal: careerGoal
       });
 
+      // Run extended Learning Intelligence & Interview Agents
+      const learningOutput = await runLearningAgents(analysisState);
+      if (learningOutput) {
+        const savedCourses = await saveCourses(userId, learningOutput.courses);
+        const courseIdMap = savedCourses[0]?.id;
+
+        await saveLearningResources(
+          userId,
+          learningOutput.learningResources.map(r => ({ ...r, course_id: courseIdMap }))
+        );
+        await saveStudyMaterials(
+          userId,
+          learningOutput.studyMaterials.map(m => ({ ...m, course_id: courseIdMap }))
+        );
+
+        for (const quizObj of learningOutput.quizzesWithQuestions) {
+          const { questions, ...quizData } = quizObj;
+          await saveQuiz(userId, { ...quizData, course_id: courseIdMap }, questions);
+        }
+
+        await saveInterviewAssessment(userId, learningOutput.interviewAssessment);
+      }
+
       router.push('/dashboard');
     } catch (err) {
       console.error(err);
@@ -228,21 +260,43 @@ export default function AssessmentWizard() {
         )}
 
         {step === 2 && (
-          <div className="grid grid-cols-2 gap-2">
-            {interestOptions.map(interest => {
-              const selected = interests.includes(interest);
-              return (
-                <button
-                  key={interest}
-                  onClick={() => toggleInterest(interest)}
-                  className={`px-3 py-2 text-xs font-medium rounded-lg border text-left transition-all ${
-                    selected ? 'bg-indigo-50 border-indigo-600 text-indigo-700' : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
-                  }`}
-                >
-                  {interest}
-                </button>
-              );
-            })}
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-2">
+              {interestOptions.map(interest => {
+                const selected = interests.includes(interest);
+                return (
+                  <button
+                    key={interest}
+                    onClick={() => toggleInterest(interest)}
+                    className={`px-3 py-2 text-xs font-medium rounded-lg border text-left transition-all ${
+                      selected ? 'bg-indigo-50 border-indigo-600 text-indigo-700' : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
+                    }`}
+                  >
+                    {interest}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="flex gap-2 pt-2 border-t border-slate-100">
+              <Input
+                placeholder="Add custom interest..."
+                value={customInterest}
+                onChange={(e) => setCustomInterest(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addCustomInterest())}
+              />
+              <Button type="button" variant="secondary" onClick={addCustomInterest}>
+                Add
+              </Button>
+            </div>
+            {interests.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 pt-1">
+                {interests.map(i => (
+                  <span key={i} className="px-2 py-0.5 text-[11px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100 rounded-md">
+                    {i}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
         )}
 

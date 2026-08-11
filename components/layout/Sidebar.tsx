@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { LayoutDashboard, Award, BookOpen, FolderHeart, User, LogOut } from 'lucide-react';
+import { LayoutDashboard, Award, BookOpen, FolderHeart, User, LogOut, GraduationCap, HelpCircle, CheckCircle } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
 
 export default function Sidebar() {
@@ -28,8 +28,11 @@ export default function Sidebar() {
     { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
     { name: 'Career Analysis', path: '/analysis', icon: Award },
     { name: 'Skill Gap', path: '/skills', icon: BookOpen },
+    { name: 'Learning & Material', path: '/learning', icon: GraduationCap },
     { name: 'Roadmap', path: '/roadmap', icon: BookOpen },
+    { name: 'MCQ Quizzes', path: '/quiz', icon: HelpCircle },
     { name: 'Projects', path: '/projects', icon: FolderHeart },
+    { name: 'Interview Readiness', path: '/interview', icon: CheckCircle },
     { name: 'Profile', path: '/profile', icon: User }
   ];
 

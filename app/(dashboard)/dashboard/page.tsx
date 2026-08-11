@@ -3,8 +3,9 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase/client';
-import { getCareerRecommendation, getSkillGaps, getRoadmap, getProjects } from '@/lib/supabase/queries';
+import { getCareerRecommendation, getSkillGaps, getRoadmap, getProjects, getInterviewAssessment, getCourses } from '@/lib/supabase/queries';
 import { CareerRecommendation, SkillGap, RoadmapPhase, ProjectRecommendation } from '@/types/career';
+import { InterviewAssessment, Course } from '@/types/learning';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/Card';
 import { Progress } from '@/components/ui/Progress';
 import { Badge } from '@/components/ui/Badge';
@@ -17,6 +18,8 @@ export default function DashboardPage() {
   const [skillGaps, setSkillGaps] = useState<SkillGap[]>([]);
   const [roadmap, setRoadmap] = useState<RoadmapPhase[]>([]);
   const [projects, setProjects] = useState<ProjectRecommendation[]>([]);
+  const [interviewAssessment, setInterviewAssessment] = useState<InterviewAssessment | null>(null);
+  const [courses, setCourses] = useState<Course[]>([]);
 
   useEffect(() => {
     async function loadDashboardData() {
@@ -29,11 +32,15 @@ export default function DashboardPage() {
       const skills = await getSkillGaps(user.id);
       const phases = await getRoadmap(user.id);
       const projs = await getProjects(user.id);
+      const interview = await getInterviewAssessment(user.id);
+      const courseList = await getCourses(user.id);
 
       setRecommendation(rec);
       setSkillGaps(skills);
       setRoadmap(phases);
       setProjects(projs);
+      setInterviewAssessment(interview);
+      setCourses(courseList);
       setLoading(false);
     }
     loadDashboardData();
@@ -141,6 +148,21 @@ export default function DashboardPage() {
               </div>
               <Progress value={projects.length ? (completedProjects / projects.length) * 100 : 0} />
             </div>
+
+            {interviewAssessment && (
+              <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
+                <div>
+                  <span className="text-xs font-bold text-slate-800 block">Interview Readiness Score</span>
+                  <span className="text-[11px] text-slate-500">Weighted evaluation across concepts & quizzes</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-xl font-extrabold text-indigo-600">{interviewAssessment.overall_readiness_score}%</span>
+                  <Link href="/interview">
+                    <Button size="sm" variant="outline" className="text-xs">Check Details &rarr;</Button>
+                  </Link>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

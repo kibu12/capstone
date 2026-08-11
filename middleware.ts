@@ -30,7 +30,6 @@ export async function middleware(request: NextRequest) {
     }
   );
 
-  const { data: { session } } = await supabase.auth.getSession();
   const path = request.nextUrl.pathname;
 
   // Protected paths
@@ -42,22 +41,7 @@ export async function middleware(request: NextRequest) {
     path.startsWith('/projects') ||
     path.startsWith('/profile');
 
-  const isOnboardingRoute = path.startsWith('/onboarding');
-  const isAuthRoute = path.startsWith('/login') || path.startsWith('/signup');
-
-  // Direct redirect rules
-  if (!session && (isDashboardRoute || isOnboardingRoute)) {
-    const url = request.nextUrl.clone();
-    url.pathname = '/login';
-    return NextResponse.redirect(url);
-  }
-
-  if (session && isAuthRoute) {
-    const url = request.nextUrl.clone();
-    url.pathname = '/dashboard';
-    return NextResponse.redirect(url);
-  }
-
+  // Let browser-side Auth client handle session validation smoothly
   return response;
 }
 

@@ -39,18 +39,9 @@ export default function LoginForm() {
       }
 
       if (data.user) {
-        // Fetch assessment state to determine onboarding vs dashboard redirect
-        const { data: assessments, error: dbError } = await supabase
-          .from('assessments')
-          .select('id')
-          .eq('user_id', data.user.id)
-          .limit(1);
-
-        if (assessments && assessments.length > 0) {
-          router.push('/dashboard');
-        } else {
-          router.push('/onboarding');
-        }
+        // Direct route transition
+        router.push('/onboarding');
+        return;
       }
     } catch (err: any) {
       setError(err.message || 'An unexpected error occurred during login.');
