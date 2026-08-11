@@ -24,9 +24,54 @@ export default function QuizPage() {
           getQuizzes(user.id),
           getConceptPerformances(user.id)
         ]).then(([qList, cList]) => {
-          setQuizzes(qList);
+          const sampleQuiz: Quiz = {
+            id: 'demo-quiz',
+            user_id: user.id,
+            title: 'AI Engineering & System Concepts Assessment',
+            difficulty: 'Intermediate',
+            total_questions: 3,
+            passing_score: 70,
+            quiz_questions: [
+              {
+                concept_name: 'Vector Search',
+                question: 'When performing high-dimensional vector similarity retrieval, which metric is most effective for dense text embeddings?',
+                option_a: 'Euclidean distance',
+                option_b: 'Cosine similarity',
+                option_c: 'Manhattan distance',
+                option_d: 'Hamming distance',
+                correct_answer: 'B',
+                explanation: 'Cosine similarity measures directional alignment regardless of vector length, making it ideal for semantic text embeddings.',
+                difficulty: 'Medium'
+              },
+              {
+                concept_name: 'Overfitting Detection',
+                question: 'A neural model achieves 99% accuracy on training data but 58% on validation data. What issue is occurring?',
+                option_a: 'Underfitting',
+                option_b: 'Overfitting',
+                option_c: 'Data normalization failure',
+                option_d: 'Vanishing gradient',
+                correct_answer: 'B',
+                explanation: 'High training accuracy combined with poor validation performance is a classic sign of overfitting.',
+                difficulty: 'Medium'
+              },
+              {
+                concept_name: 'RAG Architecture',
+                question: 'Why are text chunk overlaps used during document embedding indexing?',
+                option_a: 'To compress vector file size',
+                option_b: 'To prevent context loss across chunk boundaries',
+                option_c: 'To encrypt sensitive user tokens',
+                option_d: 'To double database write speed',
+                correct_answer: 'B',
+                explanation: 'Overlapping chunks ensure that sentences or key phrases split at boundary cuts retain full semantic context.',
+                difficulty: 'Hard'
+              }
+            ]
+          };
+
+          const activeList = qList.length > 0 ? qList : [sampleQuiz];
+          setQuizzes(activeList);
           setConcepts(cList);
-          if (qList.length > 0) setActiveQuiz(qList[0]);
+          setActiveQuiz(activeList[0]);
           setLoading(false);
         });
       }

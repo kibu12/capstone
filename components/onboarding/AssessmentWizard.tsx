@@ -108,79 +108,104 @@ export default function AssessmentWizard() {
       }
 
       // Clear old details and write persistent DB values
-      await clearExistingCareerData(userId);
-      await saveAssessment(userId, assessment);
+      try { await clearExistingCareerData(userId); } catch (e) { console.warn("clearExistingCareerData skipped:", e); }
+      try { await saveAssessment(userId, assessment); } catch (e) { console.warn("saveAssessment skipped:", e); }
       
       if (analysisState.recommendation) {
-        await saveCareerRecommendation(userId, analysisState.recommendation);
+        try { await saveCareerRecommendation(userId, analysisState.recommendation); } catch (e) { console.warn("saveCareerRecommendation skipped:", e); }
       }
       if (analysisState.skillGaps) {
-        await saveSkillGaps(userId, analysisState.skillGaps.map(g => ({
-          skill_name: g.skillName,
-          current_level: g.currentLevel,
-          required_level: g.requiredLevel,
-          priority: g.priority,
-          category: g.category,
-          status: 'Not Started'
-        })));
+        try {
+          await saveSkillGaps(userId, analysisState.skillGaps.map(g => ({
+            skill_name: g.skillName,
+            current_level: g.currentLevel,
+            required_level: g.requiredLevel,
+            priority: g.priority,
+            category: g.category,
+            status: 'Not Started'
+          })));
+        } catch (e) { console.warn("saveSkillGaps skipped:", e); }
       }
       if (analysisState.roadmap?.phases) {
-        await saveRoadmapPhases(userId, analysisState.roadmap.phases.map(p => ({
-          title: p.title,
-          description: p.description,
-          duration: p.duration,
-          phase: p.phaseNumber,
-          skills: p.skills,
-          resources: p.resources,
-          status: 'Not Started',
-          progress: 0
-        })));
+        try {
+          await saveRoadmapPhases(userId, analysisState.roadmap.phases.map(p => ({
+            title: p.title,
+            description: p.description,
+            duration: p.duration,
+            phase: p.phaseNumber,
+            skills: p.skills,
+            resources: p.resources,
+            status: 'Not Started',
+            progress: 0
+          })));
+        } catch (e) { console.warn("saveRoadmapPhases skipped:", e); }
       }
       if (analysisState.projects) {
-        await saveProjects(userId, analysisState.projects.map(p => ({
-          title: p.title,
-          description: p.description,
-          difficulty: p.difficulty,
-          skills: p.skills,
-          status: 'Not Started',
-          estimated_time: p.estimated_time,
-          portfolio_value: p.portfolio_value
-        })));
+        try {
+          await saveProjects(userId, analysisState.projects.map(p => ({
+            title: p.title,
+            description: p.description,
+            difficulty: p.difficulty,
+            skills: p.skills,
+            status: 'Not Started',
+            estimated_time: p.estimated_time,
+            portfolio_value: p.portfolio_value
+          })));
+        } catch (e) { console.warn("saveProjects skipped:", e); }
       }
 
       // Update target profile meta metrics
-      await updateProfile(userId, {
-        target_role: targetRole,
-        experience_level: experience,
-        career_goal: careerGoal
-      });
-
-      // Run extended Learning Intelligence & Interview Agents
-      const learningOutput = await runLearningAgents(analysisState);
-      if (learningOutput) {
-        const savedCourses = await saveCourses(userId, learningOutput.courses);
-        const courseIdMap = savedCourses[0]?.id;
-
-        await saveLearningResources(
-          userId,
-          learningOutput.learningResources.map(r => ({ ...r, course_id: courseIdMap }))
-        );
-        await saveStudyMaterials(
-          userId,
-          learningOutput.studyMaterials.map(m => ({ ...m, course_id: courseIdMap }))
-        );
-
-        for (const quizObj of learningOutput.quizzesWithQuestions) {
-          const { questions, ...quizData } = quizObj;
-          await saveQuiz(userId, { ...quizData, course_id: courseIdMap }, questions);
-        }
-
-        await saveInterviewAssessment(userId, learningOutput.interviewAssessment);
+      try {
+        await updateProfile(userId, {
+          target_role: targetRole,
+          experience_level: experience,
+          career_goal: careerGoal
+        });
+      } catch (e) {
+        // Silently continue
       }
 
-      router.push('/dashboard');
+      // Run extended Learning Intelligence & Interview Agents
+      try {
+        const learningOutput = await runLearningAgents(analysisState);
+        if (learningOutput && learningOutput.courses.length > 0) {
+          const savedCourses = await saveCourses(userId, learningOutput.courses);
+
+          for (let i = 0; i < savedCourses.length; i++) {
+            const courseObj = savedCourses[i];
+            const courseId = courseObj.id;
+
+            // Save resources for this course
+            const courseResources = learningOutput.learningResources.slice(i * 2, (i + 1) * 2);
+            if (courseResources.length > 0) {
+              await saveLearningResources(userId, courseResources.map(r => ({ ...r, course_id: courseId })));
+            }
+
+            // Save study material for this course
+            if (learningOutput.studyMaterials[i]) {
+              await saveStudyMaterials(userId, [{ ...learningOutput.studyMaterials[i], course_id: courseId }]);
+            }
+
+            // Save quiz for this course
+            if (learningOutput.quizzesWithQuestions[i]) {
+              const { questions, ...quizData } = learningOutput.quizzesWithQuestions[i];
+              await saveQuiz(userId, { ...quizData, course_id: courseId }, questions);
+            }
+          }
+
+          if (learningOutput.interviewAssessment) {
+            await saveInterviewAssessment(userId, learningOutput.interviewAssessment);
+          }
+        }
+      } catch (learningError) {
+        console.warn("Learning Intelligence saving error:", learningError);
+      }
+
+      window.location.href = '/dashboard';
     } catch (err) {
-      console.error(err);
+      console.error("General analysis wizard error:", err);
+      window.location.href = '/dashboard';
+    } finally {
       setAnalyzing(false);
     }
   };

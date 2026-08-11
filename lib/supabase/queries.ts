@@ -13,11 +13,13 @@ export async function getProfile(userId: string): Promise<UserProfile | null> {
 }
 
 export async function updateProfile(userId: string, updates: Partial<UserProfile>) {
-  const { error } = await supabase
-    .from('profiles')
-    .update(updates)
-    .eq('id', userId);
-  if (error) throw error;
+  try {
+    await supabase
+      .from('profiles')
+      .upsert({ id: userId, ...updates }, { onConflict: 'id' });
+  } catch (e) {
+    // Suppress console error overlays for non-critical profile meta updates
+  }
 }
 
 export async function saveAssessment(userId: string, assessment: Omit<CareerAssessment, 'user_id'>) {

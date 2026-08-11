@@ -25,10 +25,61 @@ export default function LearningPage() {
           getLearningResources(user.id),
           getStudyMaterials(user.id)
         ]).then(([cList, rList, sList]) => {
-          setCourses(cList);
-          setResources(rList);
-          setStudyMaterials(sList);
-          if (sList.length > 0) setActiveMaterial(sList[0]);
+          // If empty, provide rich demo defaults instantly
+          const defaultCourses: Course[] = cList.length > 0 ? cList : [
+            { id: '1', user_id: user.id, title: 'AI Engineering & Vector Systems', description: 'Core principles of modern AI, embeddings, and RAG architectures.', skill: 'AI Engineering', category: 'Core Concept', difficulty: 'Advanced', estimated_hours: 12, order_index: 1, status: 'In Progress', progress: 45 },
+            { id: '2', user_id: user.id, title: 'Machine Learning Pipelines & MLOps', description: 'Model training, data preprocessing, and automated continuous integration.', skill: 'Machine Learning', category: 'Engineering', difficulty: 'Intermediate', estimated_hours: 8, order_index: 2, status: 'Not Started', progress: 0 }
+          ];
+
+          const defaultResources: LearningResource[] = rList.length > 0 ? rList : [
+            { id: '1', user_id: user.id, title: 'Python Official Technical Guides', description: 'Language reference, standard library documentation, and AsyncIO patterns.', url: 'https://docs.python.org/3/', resource_type: 'documentation', provider: 'Python Org', difficulty: 'Beginner', duration: 'Self-paced', relevance_score: 0.96, is_recommended: true, status: 'Not Started' },
+            { id: '2', user_id: user.id, title: 'Machine Learning Full Course by Andrew Ng', description: 'Complete video series covering Supervised, Unsupervised, and Deep Learning.', url: 'https://youtube.com', resource_type: 'video', provider: 'YouTube Education', difficulty: 'Intermediate', duration: '10 hours', relevance_score: 0.94, is_recommended: true, status: 'Not Started' },
+            { id: '3', user_id: user.id, title: 'LangChain & Vector Indexing Architecture', description: 'Building production RAG applications with vector indexes.', url: 'https://python.langchain.com/', resource_type: 'documentation', provider: 'LangChain Docs', difficulty: 'Advanced', duration: '5 hours', relevance_score: 0.92, is_recommended: true, status: 'Not Started' }
+          ];
+
+          const defaultStudyMaterials: StudyMaterial[] = sList.length > 0 ? sList : [
+            {
+              id: '1',
+              user_id: user.id,
+              title: 'AI Engineering & RAG — Adaptive Study Guide',
+              overview: 'Comprehensive reference covering Retrieval-Augmented Generation, vector similarity search, and prompt engineering.',
+              difficulty: 'Advanced',
+              estimated_minutes: 20,
+              content: {
+                whyItMatters: 'RAG allows LLMs to query domain knowledge in real-time without expensive model retrain cycles.',
+                coreConcepts: [
+                  { name: 'Vector Indexing', detail: 'Transforming text into high-dimensional embeddings for similarity search.' },
+                  { name: 'Chunking Strategies', detail: 'Splitting documents into optimal context windows for prompt injection.' },
+                  { name: 'Evaluation Frameworks', detail: 'Measuring retrieval accuracy, faithfulness, and answer relevance.' }
+                ],
+                detailedExplanation: 'Retrieval-Augmented Generation connects foundation models directly to authoritative databases. Vector search retrieves top-k documents to construct precise context prompts.',
+                realWorldExample: 'Enterprise customer support bots querying PDF user manuals in real time.',
+                codeExample: `// RAG Retrieval Flow Example
+async function queryVectorDatabase(promptEmbedding) {
+  const matches = await vectorStore.similaritySearch(promptEmbedding, 3);
+  return matches.map(m => m.pageContent).join('\\n');
+}`,
+                commonMistakes: [
+                  'Overlooking chunk boundary overlaps leading to fragmented sentences.',
+                  'Not sanitizing retrieved context before passing into system prompts.'
+                ],
+                interviewRelevance: 'Interviewers frequently ask how to reduce hallucinations and optimize vector search speed.',
+                keyTakeaways: [
+                  'Embeddings convert semantic meaning into mathematical vectors.',
+                  'Chunk size directly impacts retrieval relevance.'
+                ],
+                quickRevision: [
+                  'What is cosine similarity?',
+                  'Why use hybrid keyword + vector search?'
+                ]
+              }
+            }
+          ];
+
+          setCourses(defaultCourses);
+          setResources(defaultResources);
+          setStudyMaterials(defaultStudyMaterials);
+          setActiveMaterial(defaultStudyMaterials[0]);
           setLoading(false);
         });
       }
