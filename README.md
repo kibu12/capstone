@@ -34,3 +34,4 @@ The application runs a 4-Agent Pipeline powered by a local Retrieval-Augmented G
    npm run dev
    ```
 5. Open [http://localhost:3000](http://localhost:3000) to view the application.
+"# capstone" 
