@@ -23,177 +23,178 @@ export default function QuizPage() {
   const [retesting, setRetesting] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // Client-side fallback dynamic question generator for high reliability
+  // Client-side fallback question generator — position-balanced, plausible distractors
+  // This is only used when the backend API is unreachable.
   const generateDynamicQuestions = (count: number = 15): QuizQuestion[] => {
     const questionPool: QuizQuestion[] = [
       {
         concept_name: 'Architecture & Scalability',
-        question: 'When scaling a system powered by AI Engineering, which issue is a critical performance bottleneck?',
-        option_a: 'Excessive network latency and unoptimized payload sizes',
-        option_b: 'Color contrast ratio in UI themes',
-        option_c: 'File extension naming styles',
-        option_d: 'Whitespace in source comments',
-        correct_answer: 'A',
-        explanation: 'Network latency and unoptimized payload sizes are primary scalability bottlenecks.',
+        question: 'When scaling an AI Engineering system, which factor is most likely to create a critical performance bottleneck?',
+        option_a: 'Inconsistent code formatting across source files',
+        option_b: 'Network latency and unoptimized payload serialization',
+        option_c: 'Number of comments in configuration files',
+        option_d: 'Using camelCase instead of snake_case naming',
+        correct_answer: 'B',
+        explanation: 'Network latency and payload serialization overhead are primary scalability concerns that directly impact system throughput.',
         difficulty: 'Medium'
       },
       {
         concept_name: 'Token Management',
-        question: 'What occurs when prompt payload tokens exceed the maximum context window of an LLM model?',
-        option_a: 'The model returns a context length error or truncates input tokens',
-        option_b: 'The model automatically expands its parameter size',
-        option_c: 'The server reboots',
-        option_d: 'Memory usage drops to 0',
-        correct_answer: 'A',
-        explanation: 'Context window bounds force truncation or return context length exception errors.',
+        question: 'What happens when input tokens exceed the maximum context window of an LLM?',
+        option_a: 'The model silently ignores previous instructions',
+        option_b: 'GPU memory allocation automatically doubles',
+        option_c: 'The API returns a context length error or truncates input',
+        option_d: 'The model switches to a larger architecture variant',
+        correct_answer: 'C',
+        explanation: 'Exceeding the context window limit causes the API to either return an error or truncate the input to fit within bounds.',
         difficulty: 'Easy'
       },
       {
         concept_name: 'Prompt Engineering',
-        question: 'Which technique improves LLM reasoning accuracy when handling multi-step AI Engineering tasks?',
-        option_a: 'Chain-of-Thought (CoT) prompting',
-        option_b: 'Truncating system messages',
-        option_c: 'Increasing temperature to 2.0',
-        option_d: 'Removing system instructions',
-        correct_answer: 'A',
-        explanation: 'Chain-of-Thought prompting encourages the model to break complex reasoning into intermediate steps.',
+        question: 'Which prompting technique best improves LLM reasoning on complex multi-step tasks?',
+        option_a: 'Removing all system-level instructions entirely',
+        option_b: 'Setting the temperature parameter above 1.5',
+        option_c: 'Reducing the prompt to a single keyword',
+        option_d: 'Using chain-of-thought step-by-step reasoning',
+        correct_answer: 'D',
+        explanation: 'Chain-of-thought prompting guides the model through explicit intermediate steps, improving accuracy on multi-step reasoning.',
         difficulty: 'Medium'
       },
       {
         concept_name: 'Vector Similarity Search',
-        question: 'Which distance metric measures directional alignment between dense text vector embeddings?',
-        option_a: 'Cosine similarity',
-        option_b: 'Euclidean distance',
-        option_c: 'Manhattan distance',
-        option_d: 'Hamming distance',
-        correct_answer: 'A',
-        explanation: 'Cosine similarity calculates the cosine of the angle between two high-dimensional vectors.',
+        question: 'In a RAG system, which metric measures directional alignment between vector embeddings?',
+        option_a: 'Manhattan distance between vector endpoints',
+        option_b: 'Hamming distance of binary representations',
+        option_c: 'Euclidean distance in high-dimensional space',
+        option_d: 'Cosine similarity of embedding vectors',
+        correct_answer: 'D',
+        explanation: 'Cosine similarity measures the cosine of the angle between two vectors, capturing directional alignment regardless of magnitude.',
         difficulty: 'Medium'
       },
       {
         concept_name: 'RAG Context Chunking',
-        question: 'Why are text chunk overlaps configured during document embedding indexing?',
-        option_a: 'To preserve semantic context across chunk boundary cuts',
-        option_b: 'To compress vector index size',
-        option_c: 'To encrypt private key strings',
-        option_d: 'To double database write speed',
-        correct_answer: 'A',
-        explanation: 'Overlap windows prevent sentence truncation at chunk cuts from losing context.',
+        question: 'Why are overlapping chunk boundaries configured during document indexing in RAG systems?',
+        option_a: 'To reduce the total size of the vector index',
+        option_b: 'To preserve semantic context that spans chunk boundaries',
+        option_c: 'To increase the speed of batch write operations',
+        option_d: 'To encrypt document content at rest in storage',
+        correct_answer: 'B',
+        explanation: 'Chunk overlaps ensure that concepts split across boundaries retain their full semantic context in both chunks.',
         difficulty: 'Hard'
       },
       {
         concept_name: 'Overfitting & Generalization',
-        question: 'A neural model yields 98% accuracy on training data but 52% on test sets. What problem exists?',
-        option_a: 'Overfitting',
-        option_b: 'Underfitting',
-        option_c: 'Gradient explosion',
-        option_d: 'Data normalization error',
+        question: 'A model achieves 98% accuracy on training data but 52% on the test set. What does this indicate?',
+        option_a: 'The model has memorized training noise instead of patterns',
+        option_b: 'The dataset requires additional feature engineering',
+        option_c: 'The learning rate was configured too conservatively',
+        option_d: 'The test set contains corrupted label annotations',
         correct_answer: 'A',
-        explanation: 'High training score coupled with low validation score signals that the model overfitted noise.',
+        explanation: 'A large gap between training and test accuracy indicates overfitting — memorizing noise rather than learning generalizable patterns.',
         difficulty: 'Medium'
       },
       {
         concept_name: 'Error Resilience',
-        question: 'Which architectural pattern best prevents silent failures in an AI execution pipeline?',
-        option_a: 'Implementing explicit telemetry logging, backoff retries, and fallback boundaries',
-        option_b: 'Wrapping execution in empty try-catch blocks',
-        option_c: 'Ignoring HTTP exception codes',
-        option_d: 'Returning null fallbacks without logging',
-        correct_answer: 'A',
-        explanation: 'Telemetry combined with backoff retries and fallback boundaries prevents silent system failures.',
-        difficulty: 'Medium'
+        question: 'An AI pipeline experiences intermittent API timeouts. Which pattern best prevents silent data loss?',
+        option_a: 'Wrapping all calls in empty try-catch blocks',
+        option_b: 'Returning cached stale data without any logging',
+        option_c: 'Implementing exponential backoff retries with structured logging',
+        option_d: 'Disabling timeout limits on all HTTP requests',
+        correct_answer: 'C',
+        explanation: 'Exponential backoff handles transient failures gracefully, while structured logging ensures errors are captured for debugging.',
+        difficulty: 'Hard'
       },
       {
         concept_name: 'Security & Input Validation',
-        question: 'How should untrusted user inputs be handled before passing them to LLM prompts?',
-        option_a: 'Strictly schema-validated and sanitized prior to prompt construction',
-        option_b: 'Passed directly without escaping',
-        option_c: 'Stored without type checking',
-        option_d: 'Evaluated using raw JavaScript eval() calls',
-        correct_answer: 'A',
-        explanation: 'Inputs must be strictly schema-validated and sanitized to prevent prompt injection attacks.',
+        question: 'Before passing user inputs to LLM prompts, what is the recommended security approach?',
+        option_a: 'Evaluate inputs using dynamic code execution',
+        option_b: 'Store inputs directly in plaintext log files',
+        option_c: 'Pass inputs through without any transformation',
+        option_d: 'Validate against a strict schema and sanitize before injection',
+        correct_answer: 'D',
+        explanation: 'Schema validation and sanitization prevent prompt injection attacks by ensuring only safe input formats reach the LLM.',
         difficulty: 'Hard'
       },
       {
         concept_name: 'Query Optimization',
-        question: 'What is the main benefit of implementing caching layers for LLM embeddings?',
-        option_a: 'Reduces computational overhead and speeds up response latency',
-        option_b: 'Increases disk storage consumption unnecessarily',
-        option_c: 'Forces client browsers to constantly reload',
-        option_d: 'Deletes database schemas',
-        correct_answer: 'A',
-        explanation: 'Caching avoids redundant embedding computation and speeds up response times.',
+        question: 'What is the main advantage of implementing caching layers in AI services?',
+        option_a: 'Forcing client browsers to reload page assets',
+        option_b: 'Increasing total disk storage consumption',
+        option_c: 'Reducing redundant computation and response latency',
+        option_d: 'Automatically deleting stale database entries',
+        correct_answer: 'C',
+        explanation: 'Caching avoids redundant computation by storing previously calculated results, significantly reducing response latency.',
         difficulty: 'Easy'
       },
       {
         concept_name: 'Asynchronous Execution',
-        question: 'Why should blocking synchronous calls be avoided on main event loops in web applications?',
-        option_a: 'They cause thread deadlock and UI event loop freeze',
-        option_b: 'They speed up execution memory',
-        option_c: 'They automate CSS updates',
-        option_d: 'They trigger automatic database backups',
+        question: 'Why should blocking synchronous calls be avoided on the main event loop?',
+        option_a: 'They freeze the event loop and block all other operations',
+        option_b: 'They automatically trigger database backup procedures',
+        option_c: 'They increase available memory for child processes',
+        option_d: 'They enable parallel GPU computation by default',
         correct_answer: 'A',
-        explanation: 'Blocking synchronous calls on main thread loops freezes event dispatchers.',
+        explanation: 'Blocking the main event loop prevents all other pending callbacks and I/O operations from being processed.',
         difficulty: 'Medium'
       },
       {
         concept_name: 'Hyperparameter Tuning',
-        question: 'How does setting a lower LLM temperature parameter (e.g., 0.1 vs 0.9) affect model outputs?',
-        option_a: 'Produces more deterministic and focused responses',
-        option_b: 'Produces highly creative and random text variations',
-        option_c: 'Disables response token generation',
-        option_d: 'Increases maximum context window size',
-        correct_answer: 'A',
-        explanation: 'Low temperature restricts probability distribution sampling to top tokens, resulting in deterministic outputs.',
+        question: 'How does setting a low temperature (e.g. 0.1) affect LLM outputs?',
+        option_a: 'It increases the maximum token output length',
+        option_b: 'It enables multi-turn conversation memory',
+        option_c: 'It expands the model vocabulary size dynamically',
+        option_d: 'It produces more deterministic and focused responses',
+        correct_answer: 'D',
+        explanation: 'Low temperature restricts sampling to higher-probability tokens, producing more deterministic and consistent outputs.',
         difficulty: 'Easy'
       },
       {
         concept_name: 'Model Fine-Tuning',
-        question: 'What is the primary objective of LoRA (Low-Rank Adaptation) in LLM fine-tuning?',
-        option_a: 'To adapt model weights efficiently with significantly fewer trainable parameters',
-        option_b: 'To convert model weights into plain text files',
-        option_c: 'To replace transformer attention mechanisms with linear regression',
-        option_d: 'To double GPU VRAM requirements',
-        correct_answer: 'A',
-        explanation: 'LoRA freezes pre-trained model weights and injects trainable rank decomposition matrices.',
-        difficulty: 'Hard'
+        question: 'An organization with limited GPU resources wants to adapt an LLM for domain tasks. Which approach is most efficient?',
+        option_a: 'Training the model from scratch on domain data',
+        option_b: 'Increasing the base model parameters by 10x',
+        option_c: 'Applying LoRA to train low-rank adapter matrices',
+        option_d: 'Converting the transformer architecture to RNN',
+        correct_answer: 'C',
+        explanation: 'LoRA freezes pre-trained weights and injects small trainable matrices, achieving adaptation with a fraction of the compute.',
+        difficulty: 'Expert'
       },
       {
         concept_name: 'API Rate Limiting',
-        question: 'Which algorithm is commonly used by API gateways to manage request rate limits?',
-        option_a: 'Leaky Bucket or Token Bucket algorithm',
-        option_b: 'Bubble Sort algorithm',
-        option_c: 'Dijkstra shortest path algorithm',
-        option_d: 'Binary Search tree algorithm',
-        correct_answer: 'A',
-        explanation: 'Token bucket and leaky bucket algorithms regulate traffic flow and enforce throughput limits.',
+        question: 'Which algorithm provides fair rate limiting with controlled burst support for API consumers?',
+        option_a: 'Binary search over request timestamps',
+        option_b: 'Token bucket algorithm with per-consumer quotas',
+        option_c: 'Bubble sort on request priority headers',
+        option_d: 'Dijkstra pathfinding across service routes',
+        correct_answer: 'B',
+        explanation: 'The token bucket algorithm allows controlled bursts while enforcing sustained rate limits with fair per-consumer quotas.',
         difficulty: 'Medium'
       },
       {
         concept_name: 'Data Normalization',
-        question: 'Why is feature scaling (e.g. Min-Max or Z-score normalization) applied before training gradient-based models?',
-        option_a: 'Ensures features contribute equally to cost function gradients during optimization',
-        option_b: 'Increases missing data values',
-        option_c: 'Converts numerical matrices into string arrays',
-        option_d: 'Prevents database indexing',
-        correct_answer: 'A',
-        explanation: 'Normalized feature ranges prevent large magnitude features from dominating gradient updates.',
+        question: 'Why is feature scaling applied before training gradient-based models?',
+        option_a: 'It converts categorical features into ordinal types',
+        option_b: 'It removes null values from the training dataset',
+        option_c: 'It prevents high-magnitude features from dominating gradients',
+        option_d: 'It increases the total number of training samples',
+        correct_answer: 'C',
+        explanation: 'Feature scaling ensures all features contribute proportionally to gradient updates during optimization.',
         difficulty: 'Medium'
       },
       {
         concept_name: 'Hallucination Mitigation',
-        question: 'Which evaluation technique checks if RAG generated answers are grounded strictly in retrieved context docs?',
-        option_a: 'Faithfulness & Groundedness evaluation',
-        option_b: 'Color palette contrast check',
-        option_c: 'Syntax linting check',
-        option_d: 'Cookie expiration check',
+        question: 'Which evaluation approach verifies that RAG-generated answers are grounded in retrieved context?',
+        option_a: 'Faithfulness and groundedness scoring',
+        option_b: 'CSS accessibility contrast analysis',
+        option_c: 'HTTP response header field validation',
+        option_d: 'Browser cookie expiration auditing',
         correct_answer: 'A',
-        explanation: 'Faithfulness metrics verify that claims in the output text are backed by facts in retrieved context chunks.',
+        explanation: 'Faithfulness metrics verify that every claim in the output is directly supported by facts in the retrieved context.',
         difficulty: 'Medium'
       }
     ];
 
-    // Shuffle and pick requested count
+    // Shuffle questions and return requested count
     const shuffled = [...questionPool].sort(() => 0.5 - Math.random());
     return shuffled.slice(0, count);
   };
@@ -385,8 +386,8 @@ export default function QuizPage() {
           </CardHeader>
           <CardContent className="space-y-1.5 pt-0 text-xs">
             <div className="flex flex-wrap gap-1.5">
-              {weakConcepts.map(c => (
-                <span key={c.id} className="px-2.5 py-1 bg-white border border-amber-200 text-amber-900 text-[11px] font-semibold rounded-lg shadow-2xs">
+              {weakConcepts.map((c, idx) => (
+                <span key={c.id || c.concept_name || `concept-${idx}`} className="px-2.5 py-1 bg-white border border-amber-200 text-amber-900 text-[11px] font-semibold rounded-lg shadow-2xs">
                   {c.concept_name} ({c.mastery_score}% Mastery)
                 </span>
               ))}

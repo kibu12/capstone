@@ -286,8 +286,8 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent className="p-0">
             <div className="divide-y divide-slate-100">
-              {skillGaps.slice(0, 5).map(skill => (
-                <div key={skill.id} className="px-5 py-3.5 flex items-center justify-between hover:bg-slate-50/70 transition-colors">
+              {skillGaps.slice(0, 5).map((skill, index) => (
+                <div key={skill.id || skill.skill_name || `skill-${index}`} className="px-5 py-3.5 flex items-center justify-between hover:bg-slate-50/70 transition-colors">
                   <div className="space-y-1 min-w-0 pr-4">
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-bold text-slate-900 truncate">{skill.skill_name}</span>

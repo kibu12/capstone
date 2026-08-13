@@ -154,11 +154,11 @@ export default function SkillsPage() {
 
       {/* Skill Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filteredSkills.map((skill) => {
+        {filteredSkills.map((skill, index) => {
           const isCompleted = skill.status === 'Completed';
 
           return (
-            <Card key={skill.id} className="p-5 flex flex-col justify-between hover:border-indigo-300 transition-all shadow-xs">
+            <Card key={skill.id || skill.skill_name || `skill-${index}`} className="p-5 flex flex-col justify-between hover:border-indigo-300 transition-all shadow-xs">
               <div className="space-y-3">
                 <div className="flex items-start justify-between gap-2">
                   <div>

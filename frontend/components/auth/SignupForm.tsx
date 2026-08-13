@@ -18,19 +18,24 @@ export default function SignupForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Auto-redirect if user is already signed in
+  const [existingUserEmail, setExistingUserEmail] = useState<string | null>(null);
+
+  // Check if an existing session is present without forcing redirect
   useEffect(() => {
-    supabase.auth.getUser().then(async ({ data }) => {
+    supabase.auth.getUser().then(({ data }) => {
       if (data?.user) {
-        const rec = await getCareerRecommendation(data.user.id);
-        if (rec) {
-          router.push('/dashboard');
-        } else {
-          router.push('/onboarding');
-        }
+        setExistingUserEmail(data.user.email || 'another user');
       }
     });
-  }, [router]);
+  }, []);
+
+  const handleSignOutCurrent = async () => {
+    await supabase.auth.signOut();
+    setExistingUserEmail(null);
+    try {
+      localStorage.clear();
+    } catch (e) {}
+  };
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,6 +54,12 @@ export default function SignupForm() {
     setIsLoading(true);
 
     try {
+      // CRITICAL: Always sign out any existing session before creating a new user account
+      await supabase.auth.signOut();
+      try {
+        localStorage.removeItem('last_quiz_score');
+      } catch (e) {}
+
       const { data, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
@@ -67,7 +78,8 @@ export default function SignupForm() {
       }
 
       if (data.user) {
-        // Direct route transition to assessment onboarding
+        // Clear old user email state and transition to onboarding
+        setExistingUserEmail(null);
         router.push('/onboarding');
       }
     } catch (err: any) {
@@ -93,6 +105,24 @@ export default function SignupForm() {
 
       <form onSubmit={handleSignUp}>
         <CardContent className="space-y-4">
+          {existingUserEmail && (
+            <div className="p-3 text-xs bg-amber-50 text-amber-900 border border-amber-200 rounded-xl flex items-center justify-between">
+              <div>
+                <span className="font-bold">Active session:</span> {existingUserEmail}
+                <p className="text-[11px] text-amber-700 font-normal">Signing up will create a new account &amp; sign out this user.</p>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleSignOutCurrent}
+                className="text-[10px] text-amber-800 border-amber-300 hover:bg-amber-100"
+              >
+                Sign Out First
+              </Button>
+            </div>
+          )}
+
           {error && (
             <div className="p-3 text-xs bg-rose-50 text-rose-700 border border-rose-100 rounded-lg">
               {error}

@@ -5,6 +5,7 @@ import analysisRouter from './routes/analysis';
 import learningRouter from './routes/learning';
 import quizRouter from './routes/quiz';
 import interviewRouter from './routes/interview';
+import evaluationRouter from './routes/evaluation';
 
 dotenv.config();
 
@@ -33,6 +34,7 @@ app.use('/api', analysisRouter);
 app.use('/api', learningRouter);
 app.use('/api', quizRouter);
 app.use('/api', interviewRouter);
+app.use('/api/evaluation', evaluationRouter);
 
 app.listen(PORT, () => {
   console.log(`🚀 Capstone Standalone Backend API listening on http://localhost:${PORT}`);

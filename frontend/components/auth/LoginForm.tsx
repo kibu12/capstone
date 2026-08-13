@@ -16,19 +16,24 @@ export default function LoginForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Auto-redirect if user is already signed in
+  const [existingUserEmail, setExistingUserEmail] = useState<string | null>(null);
+
+  // Check if an existing session is present without forcing redirect
   useEffect(() => {
-    supabase.auth.getUser().then(async ({ data }) => {
+    supabase.auth.getUser().then(({ data }) => {
       if (data?.user) {
-        const rec = await getCareerRecommendation(data.user.id);
-        if (rec) {
-          router.push('/dashboard');
-        } else {
-          router.push('/onboarding');
-        }
+        setExistingUserEmail(data.user.email || 'another user');
       }
     });
-  }, [router]);
+  }, []);
+
+  const handleSignOutCurrent = async () => {
+    await supabase.auth.signOut();
+    setExistingUserEmail(null);
+    try {
+      localStorage.clear();
+    } catch (e) {}
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,6 +47,9 @@ export default function LoginForm() {
     setIsLoading(true);
 
     try {
+      // Clear any existing session first to prevent session collision
+      await supabase.auth.signOut();
+
       const { data, error: loginError } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -54,7 +62,8 @@ export default function LoginForm() {
       }
 
       if (data.user) {
-        // Smart route transition: redirect to dashboard if existing assessment found
+        setExistingUserEmail(null);
+        // Smart route transition: redirect to dashboard if existing recommendation found
         const rec = await getCareerRecommendation(data.user.id);
         if (rec) {
           router.push('/dashboard');
@@ -86,6 +95,34 @@ export default function LoginForm() {
 
       <form onSubmit={handleLogin}>
         <CardContent className="space-y-4">
+          {existingUserEmail && (
+            <div className="p-3 text-xs bg-amber-50 text-amber-900 border border-amber-200 rounded-xl flex items-center justify-between">
+              <div>
+                <span className="font-bold">Active session:</span> {existingUserEmail}
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => router.push('/dashboard')}
+                  className="text-[10px] text-indigo-700 border-indigo-200 hover:bg-indigo-50"
+                >
+                  Dashboard
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleSignOutCurrent}
+                  className="text-[10px] text-amber-800 border-amber-300 hover:bg-amber-100"
+                >
+                  Sign Out
+                </Button>
+              </div>
+            </div>
+          )}
+
           {error && (
             <div className="p-3 text-xs bg-rose-50 text-rose-700 border border-rose-100 rounded-lg">
               {error}

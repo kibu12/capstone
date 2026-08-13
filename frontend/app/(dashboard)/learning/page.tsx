@@ -264,9 +264,9 @@ function validateModelAccuracy(newModel, baselineScore = 0.85) {
       <div className="space-y-3">
         <h2 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Discovered Technical Resources</h2>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          {resources.map(res => (
+          {resources.map((res, idx) => (
             <a
-              key={res.id}
+              key={res.id || res.title || `res-${idx}`}
               href={res.url}
               target="_blank"
               rel="noreferrer"

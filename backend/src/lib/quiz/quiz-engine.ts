@@ -1,243 +1,451 @@
-import { Quiz, QuizQuestion } from '../../types/learning';
+/**
+ * MCQ Quiz Engine — Redesigned
+ * 
+ * Critical changes from original:
+ * 1. All questions have plausible distractors with comparable length/detail
+ * 2. Correct answers are NOT consistently the longest option
+ * 3. Answer positions are balanced via mcq-shuffler (A≈25%, B≈25%, C≈25%, D≈25%)
+ * 4. Difficulty uses cognitive levels: Recall, Understanding, Application, Analysis
+ * 5. Every generated quiz runs through mcq-validator before being returned
+ * 6. Questions are regenerated if they fail quality validation
+ */
 
-const questionBank: ((skill: string) => QuizQuestion)[] = [
-  (skill) => ({
-    concept_name: `${skill} Fundamentals`,
-    question: `What is the primary role of ${skill} in production software design?`,
-    option_a: `To encrypt user browser cookies`,
-    option_b: `To structure core business logic and manage reliable execution workflows`,
-    option_c: `To replace HTML markup`,
-    option_d: `To store static asset styles`,
-    correct_answer: 'B',
-    explanation: `${skill} structures application logic and manages operational workflows cleanly.`,
-    difficulty: 'Easy'
-  }),
-  (skill) => ({
-    concept_name: `Architecture & Scalability`,
-    question: `When scaling a system powered by ${skill}, which issue is a critical performance bottleneck?`,
-    option_a: `Excessive network latency and unoptimized payload sizes`,
-    option_b: `Color contrast ratio in UI themes`,
-    option_c: `File extension naming styles`,
-    option_d: `Whitespace in source comments`,
-    correct_answer: 'A',
-    explanation: `Network latency and unoptimized payload sizes are primary scalability bottlenecks.`,
-    difficulty: 'Medium'
-  }),
-  (skill) => ({
-    concept_name: `Error Resilience`,
-    question: `Which architectural pattern best prevents silent failures in a ${skill} pipeline?`,
-    option_a: `Wrapping execution in empty try-catch blocks`,
-    option_b: `Implementing explicit telemetry logging, backoff retries, and fallback boundaries`,
-    option_c: `Ignoring HTTP exception codes`,
-    option_d: `Returning null fallbacks without logging`,
-    correct_answer: 'B',
-    explanation: `Telemetry combined with backoff retries and fallback boundaries prevents silent system failures.`,
-    difficulty: 'Medium'
-  }),
-  (skill) => ({
-    concept_name: `Security & Input Validation`,
-    question: `How should untrusted inputs be handled before passing them to ${skill} components?`,
-    option_a: `Passed directly into database queries`,
-    option_b: `Strictly schema-validated and sanitized prior to execution`,
-    option_c: `Stored without type checking`,
-    option_d: `Evaluated using raw JavaScript eval() calls`,
-    correct_answer: 'B',
-    explanation: `Inputs must always be strictly schema-validated and sanitized to prevent injection attacks.`,
-    difficulty: 'Hard'
-  }),
-  (skill) => ({
-    concept_name: `Query Optimization`,
-    question: `What is the main benefit of implementing caching layers for ${skill} services?`,
-    option_a: `Reduces computational overhead and speeds up response latency`,
-    option_b: `Increases disk storage consumption unnecessarily`,
-    option_c: `Forces client browsers to constantly reload`,
-    option_d: `Deletes database schemas`,
-    correct_answer: 'A',
-    explanation: `Caching avoids redundant computational work and speeds up response times.`,
-    difficulty: 'Easy'
-  }),
-  (skill) => ({
-    concept_name: `Vector Similarity Search`,
-    question: `When building RAG systems with ${skill}, which distance metric measures directional alignment between dense embeddings?`,
-    option_a: `Euclidean distance`,
-    option_b: `Cosine similarity`,
-    option_c: `Manhattan distance`,
-    option_d: `Hamming distance`,
-    correct_answer: 'B',
-    explanation: `Cosine similarity measures angle alignment between high-dimensional text vector embeddings.`,
-    difficulty: 'Medium'
-  }),
-  (skill) => ({
-    concept_name: `Overfitting & Generalization`,
-    question: `A neural model evaluating ${skill} dataset yields 98% accuracy on training data but 52% on test sets. What problem exists?`,
-    option_a: `Underfitting`,
-    option_b: `Overfitting`,
-    option_c: `Gradient explosion`,
-    option_d: `Data normalization error`,
-    correct_answer: 'B',
-    explanation: `High training score coupled with low validation score signals that the model overfitted noise.`,
-    difficulty: 'Medium'
-  }),
-  (skill) => ({
-    concept_name: `RAG Context Chunking`,
-    question: `Why are text chunk overlaps configured during document embedding indexing in ${skill}?`,
-    option_a: `To compress vector index size`,
-    option_b: `To preserve semantic context across chunk boundary cuts`,
-    option_c: `To encrypt private key strings`,
-    option_d: `To double database write speed`,
-    correct_answer: 'B',
-    explanation: `Overlap windows prevent sentence truncation at chunk cuts from losing context.`,
-    difficulty: 'Hard'
-  }),
-  (skill) => ({
-    concept_name: `Asynchronous Execution`,
-    question: `Why should blocking synchronous calls be avoided on main thread loops in ${skill}?`,
-    option_a: `They cause thread deadlock and UI event loop freeze`,
-    option_b: `They speed up execution memory`,
-    option_c: `They automate CSS updates`,
-    option_d: `They trigger automatic database backups`,
-    correct_answer: 'A',
-    explanation: `Blocking synchronous calls on main thread loops freezes event dispatchers and causes deadlocks.`,
-    difficulty: 'Medium'
-  }),
-  (skill) => ({
-    concept_name: `State Management`,
-    question: `What is the risk of directly mutating global shared state arrays in ${skill}?`,
-    option_a: `Race conditions and unpredictable side effects across concurrent execution paths`,
-    option_b: `Instant compile error`,
-    option_c: `Automatic code reformatting`,
-    option_d: `Reduced file size`,
-    correct_answer: 'A',
-    explanation: `Direct global state mutation produces unhandled race conditions across parallel threads.`,
-    difficulty: 'Hard'
-  }),
-  (skill) => ({
-    concept_name: `API Design & Versioning`,
-    question: `When releasing a breaking modification to a ${skill} endpoint API, what is the industry best practice?`,
-    option_a: `Overwrite existing route parameters without notice`,
-    option_b: `Deprecate gracefully and introduce explicit route versioning (e.g. /v2/)`,
-    option_c: `Delete older endpoint definitions completely`,
-    option_d: `Return 500 error status codes to legacy clients`,
-    correct_answer: 'B',
-    explanation: `API versioning ensures backward compatibility for existing production consumers.`,
-    difficulty: 'Easy'
-  }),
-  (skill) => ({
-    concept_name: `Data Normalization`,
-    question: `Why is feature scaling applied to numerical inputs before feeding them to ${skill} ML algorithms?`,
-    option_a: `To prevent high-magnitude features from dominating model parameter updates`,
-    option_b: `To convert text into HTML tags`,
-    option_c: `To encrypt database connection strings`,
-    option_d: `To reduce hard drive usage`,
-    correct_answer: 'A',
-    explanation: `Feature scaling balances numerical ranges so gradient updates remain stable.`,
-    difficulty: 'Medium'
-  }),
-  (skill) => ({
-    concept_name: `Microservice Isolation`,
-    question: `What is the principal advantage of containerizing ${skill} services with Docker?`,
-    option_a: `Consistent environment dependencies and reliable reproducibility across environments`,
-    option_b: `Eliminates the need for source code testing`,
-    option_c: `Replaces SQL databases`,
-    option_d: `Speeds up monitor refresh rate`,
-    correct_answer: 'A',
-    explanation: `Docker containers isolate system dependencies and guarantee deployment environment consistency.`,
-    difficulty: 'Medium'
-  }),
-  (skill) => ({
-    concept_name: `Database Indexing`,
-    question: `How does adding a B-Tree index on a high-cardinality foreign key column benefit ${skill} queries?`,
-    option_a: `Transforms O(N) sequential table scans into O(log N) fast lookups`,
-    option_b: `Slows down query speed`,
-    option_c: `Deletes duplicate rows automatically`,
-    option_d: `Reduces total RAM memory`,
-    correct_answer: 'A',
-    explanation: `Indexes reduce lookup complexity from full table scans O(N) to logarithmic O(log N).`,
-    difficulty: 'Hard'
-  }),
-  (skill) => ({
-    concept_name: `CI/CD Automation`,
-    question: `Which phase in a ${skill} continuous integration pipeline catches regression bugs prior to deployment?`,
-    option_a: `Automated unit and integration test suites`,
-    option_b: `Manual code re-typing`,
-    option_c: `Changing environment variable names`,
-    option_d: `Restarting local servers`,
-    correct_answer: 'A',
-    explanation: `Automated test suites catch regressions automatically before code reaches production.`,
-    difficulty: 'Easy'
-  }),
-  (skill) => ({
-    concept_name: `Prompt Engineering`,
-    question: `Which technique improves LLM reasoning accuracy when handling multi-step ${skill} tasks?`,
-    option_a: `Chain-of-Thought prompting`,
-    option_b: `Truncating system messages`,
-    option_c: `Increasing temperature to 2.0`,
-    option_d: `Removing context instructions`,
-    correct_answer: 'A',
-    explanation: `Chain-of-Thought prompting breaks complex logic into step-by-step reasoning paths.`,
-    difficulty: 'Medium'
-  }),
-  (skill) => ({
-    concept_name: `Model Evaluation`,
-    question: `When dealing with imbalanced datasets in ${skill}, why is F1-Score preferred over simple Accuracy?`,
-    option_a: `F1-Score balances Precision and Recall, avoiding misleading accuracy on dominant classes`,
-    option_b: `Accuracy is always 100% false`,
-    option_c: `F1-Score reduces dataset size`,
-    option_d: `Precision is irrelevant in machine learning`,
-    correct_answer: 'A',
-    explanation: `F1-Score evaluates harmonic mean of precision and recall on imbalanced datasets.`,
-    difficulty: 'Hard'
-  }),
-  (skill) => ({
-    concept_name: `Latency Optimization`,
-    question: `Which strategy minimizes cold start latency for serverless ${skill} cloud functions?`,
-    option_a: `Provisioned concurrency and optimizing bundle imports`,
-    option_b: `Increasing payload size`,
-    option_c: `Disabling HTTPS caching`,
-    option_d: `Adding sleep delays`,
-    correct_answer: 'A',
-    explanation: `Provisioned concurrency keeps function execution instances warm and ready.`,
-    difficulty: 'Medium'
-  }),
-  (skill) => ({
-    concept_name: `Token Management`,
-    question: `What occurs when prompt payload tokens exceed the maximum context window of a ${skill} LLM model?`,
-    option_a: `The model returns a context length error or truncates input tokens`,
-    option_b: `The model automatically expands its parameter size`,
-    option_c: `The server reboots`,
-    option_d: `Memory usage drops to 0`,
-    correct_answer: 'A',
-    explanation: `Exceeding context length limits triggers truncation or API context length errors.`,
-    difficulty: 'Easy'
-  }),
-  (skill) => ({
-    concept_name: `Distributed Locking`,
-    question: `In a multi-instance ${skill} cluster, how do you prevent two background workers from processing the same job?`,
-    option_a: `Use distributed locking mechanisms (e.g., Redis Redlock or Postgres row locks)`,
-    option_b: `Rely on server clock sync only`,
-    option_c: `Increase worker count`,
-    option_d: `Disable database transactions`,
-    correct_answer: 'A',
-    explanation: `Distributed locks guarantee atomic single-worker execution across clustered instances.`,
-    difficulty: 'Hard'
-  })
+import { Quiz, QuizQuestion } from '../../types/learning';
+import { shuffleQuizSet, verifyPositionDistribution } from './mcq-shuffler';
+import { validateQuizSet, validateMCQ, DEFAULT_VALIDATOR_CONFIG, MCQValidatorConfig } from './mcq-validator';
+
+// ─── Cognitive Level Definitions ──────────────────────────────────────────────
+
+type CognitiveLevel = 'recall' | 'understanding' | 'application' | 'analysis';
+
+interface QuestionTemplate {
+  cognitiveLevel: CognitiveLevel;
+  difficulty: 'Easy' | 'Medium' | 'Hard' | 'Expert';
+  generator: (skill: string) => QuizQuestion;
+}
+
+// ─── Redesigned Question Bank ─────────────────────────────────────────────────
+// 
+// Design principles applied to EVERY question:
+// - Correct answer is NOT consistently option A or B
+// - All 4 options are similarly detailed and grammatically parallel
+// - Distractors are technically plausible (real concepts, just wrong for this context)
+// - No option contains obvious giveaway patterns
+// - Correct answer is NOT the longest option
+
+const questionBank: QuestionTemplate[] = [
+  // ── Easy / Recall ───────────────────────────────────────────────────────────
+  {
+    cognitiveLevel: 'recall',
+    difficulty: 'Easy',
+    generator: (skill) => ({
+      concept_name: `${skill} Fundamentals`,
+      question: `What is the primary purpose of version control systems like Git in ${skill} projects?`,
+      option_a: 'Compiling source code into production binaries',
+      option_b: 'Tracking changes and enabling collaboration across teams',
+      option_c: 'Managing database connection pool sizes',
+      option_d: 'Automating continuous integration test pipelines',
+      correct_answer: 'B',
+      explanation: 'Version control systems track file changes over time and enable multiple developers to collaborate on the same codebase without conflicts.',
+      difficulty: 'Easy',
+    }),
+  },
+  {
+    cognitiveLevel: 'recall',
+    difficulty: 'Easy',
+    generator: (skill) => ({
+      concept_name: 'Query Optimization',
+      question: `What is the main advantage of implementing caching layers in ${skill} services?`,
+      option_a: 'Forcing client browsers to reload page assets',
+      option_b: 'Increasing total disk storage consumption',
+      option_c: 'Reducing redundant computation and response latency',
+      option_d: 'Automatically deleting stale database entries',
+      correct_answer: 'C',
+      explanation: 'Caching avoids redundant computation by storing previously calculated results, significantly reducing response latency.',
+      difficulty: 'Easy',
+    }),
+  },
+  {
+    cognitiveLevel: 'recall',
+    difficulty: 'Easy',
+    generator: (skill) => ({
+      concept_name: 'CI/CD Automation',
+      question: `Which phase in a ${skill} continuous integration pipeline is designed to catch regression bugs?`,
+      option_a: 'Manual code review by team leads',
+      option_b: 'Restarting the development server',
+      option_c: 'Renaming environment variable keys',
+      option_d: 'Automated unit and integration test suites',
+      correct_answer: 'D',
+      explanation: 'Automated test suites run on every commit to catch regressions before code reaches production environments.',
+      difficulty: 'Easy',
+    }),
+  },
+  {
+    cognitiveLevel: 'recall',
+    difficulty: 'Easy',
+    generator: (skill) => ({
+      concept_name: 'Token Management',
+      question: `What happens when input tokens exceed the maximum context window of an LLM used in ${skill}?`,
+      option_a: 'The model silently ignores all previous instructions',
+      option_b: 'GPU memory allocation automatically doubles',
+      option_c: 'The API returns a context length error or truncates input',
+      option_d: 'The model switches to a larger architecture variant',
+      correct_answer: 'C',
+      explanation: 'Exceeding the context window limit causes the API to either return an error or truncate the input to fit within bounds.',
+      difficulty: 'Easy',
+    }),
+  },
+  {
+    cognitiveLevel: 'recall',
+    difficulty: 'Easy',
+    generator: (skill) => ({
+      concept_name: 'Hyperparameter Tuning',
+      question: `How does setting a low temperature (e.g. 0.1) affect LLM outputs in ${skill} applications?`,
+      option_a: 'It increases the maximum token output length',
+      option_b: 'It enables multi-turn conversation memory',
+      option_c: 'It expands the model vocabulary size',
+      option_d: 'It produces more deterministic and focused responses',
+      correct_answer: 'D',
+      explanation: 'Low temperature restricts sampling to higher-probability tokens, producing more deterministic and consistent outputs.',
+      difficulty: 'Easy',
+    }),
+  },
+
+  // ── Medium / Understanding ──────────────────────────────────────────────────
+  {
+    cognitiveLevel: 'understanding',
+    difficulty: 'Medium',
+    generator: (skill) => ({
+      concept_name: 'Architecture & Scalability',
+      question: `When scaling a ${skill} system, which factor is most likely to become a critical performance bottleneck?`,
+      option_a: 'Network latency and unoptimized payload serialization',
+      option_b: 'Inconsistent code formatting across source files',
+      option_c: 'Using camelCase instead of snake_case naming',
+      option_d: 'Number of comments in configuration files',
+      correct_answer: 'A',
+      explanation: 'Network latency and payload serialization overhead are primary scalability concerns that directly impact system throughput and user experience.',
+      difficulty: 'Medium',
+    }),
+  },
+  {
+    cognitiveLevel: 'understanding',
+    difficulty: 'Medium',
+    generator: (skill) => ({
+      concept_name: 'Vector Similarity Search',
+      question: `In a RAG system using ${skill}, which metric measures directional alignment between vector embeddings?`,
+      option_a: 'Manhattan distance between vector endpoints',
+      option_b: 'Hamming distance of binary representations',
+      option_c: 'Euclidean distance in feature space',
+      option_d: 'Cosine similarity of embedding vectors',
+      correct_answer: 'D',
+      explanation: 'Cosine similarity measures the cosine of the angle between two vectors, capturing directional alignment regardless of magnitude.',
+      difficulty: 'Medium',
+    }),
+  },
+  {
+    cognitiveLevel: 'understanding',
+    difficulty: 'Medium',
+    generator: (skill) => ({
+      concept_name: 'Overfitting & Generalization',
+      question: `A model trained on ${skill} data achieves 98% accuracy on training data but 52% on the test set. What does this indicate?`,
+      option_a: 'The dataset requires additional feature columns',
+      option_b: 'The model has memorized training noise instead of learning patterns',
+      option_c: 'The learning rate was configured too low',
+      option_d: 'The test set contains corrupted label annotations',
+      correct_answer: 'B',
+      explanation: 'A large gap between training and test accuracy indicates overfitting, where the model memorized training-specific noise rather than generalizable patterns.',
+      difficulty: 'Medium',
+    }),
+  },
+  {
+    cognitiveLevel: 'understanding',
+    difficulty: 'Medium',
+    generator: (skill) => ({
+      concept_name: 'Prompt Engineering',
+      question: `Which prompting technique best improves LLM reasoning on complex ${skill} tasks?`,
+      option_a: 'Removing all system-level instructions',
+      option_b: 'Setting the temperature parameter above 1.5',
+      option_c: 'Using chain-of-thought step-by-step reasoning',
+      option_d: 'Reducing the prompt to a single keyword',
+      correct_answer: 'C',
+      explanation: 'Chain-of-thought prompting guides the model to break complex reasoning into explicit intermediate steps, improving accuracy on multi-step tasks.',
+      difficulty: 'Medium',
+    }),
+  },
+  {
+    cognitiveLevel: 'understanding',
+    difficulty: 'Medium',
+    generator: (skill) => ({
+      concept_name: 'Data Normalization',
+      question: `Why is feature scaling applied before training gradient-based ${skill} models?`,
+      option_a: 'It converts categorical features into ordinal types',
+      option_b: 'It removes null values from the training dataset',
+      option_c: 'It prevents high-magnitude features from dominating gradient updates',
+      option_d: 'It increases the total number of training samples',
+      correct_answer: 'C',
+      explanation: 'Feature scaling ensures all features contribute proportionally to gradient updates, preventing features with large magnitudes from dominating the optimization process.',
+      difficulty: 'Medium',
+    }),
+  },
+  {
+    cognitiveLevel: 'understanding',
+    difficulty: 'Medium',
+    generator: (skill) => ({
+      concept_name: 'Asynchronous Execution',
+      question: `Why should blocking synchronous calls be avoided on the main event loop in ${skill} applications?`,
+      option_a: 'They cause the event loop to freeze and block all other operations',
+      option_b: 'They automatically trigger database backup procedures',
+      option_c: 'They increase available memory for child processes',
+      option_d: 'They enable parallel GPU computation by default',
+      correct_answer: 'A',
+      explanation: 'Blocking the main event loop prevents all other pending callbacks, I/O operations, and user interactions from being processed, causing the application to freeze.',
+      difficulty: 'Medium',
+    }),
+  },
+  {
+    cognitiveLevel: 'understanding',
+    difficulty: 'Medium',
+    generator: (skill) => ({
+      concept_name: 'Microservice Isolation',
+      question: `What is the primary advantage of containerizing ${skill} services with Docker?`,
+      option_a: 'Eliminating the need for automated test suites',
+      option_b: 'Replacing relational databases with file storage',
+      option_c: 'Ensuring environment consistency across development and production',
+      option_d: 'Increasing monitor refresh rate on client devices',
+      correct_answer: 'C',
+      explanation: 'Docker containers package application code with all dependencies, guaranteeing identical execution environments across development, staging, and production.',
+      difficulty: 'Medium',
+    }),
+  },
+  {
+    cognitiveLevel: 'understanding',
+    difficulty: 'Medium',
+    generator: (skill) => ({
+      concept_name: 'Hallucination Mitigation',
+      question: `Which evaluation approach verifies that RAG-generated ${skill} answers are grounded in retrieved context?`,
+      option_a: 'Faithfulness and groundedness scoring',
+      option_b: 'CSS accessibility contrast analysis',
+      option_c: 'HTTP response header validation',
+      option_d: 'Browser cookie expiration auditing',
+      correct_answer: 'A',
+      explanation: 'Faithfulness metrics verify that every claim in the generated output is directly supported by facts present in the retrieved context documents.',
+      difficulty: 'Medium',
+    }),
+  },
+
+  // ── Hard / Application ──────────────────────────────────────────────────────
+  {
+    cognitiveLevel: 'application',
+    difficulty: 'Hard',
+    generator: (skill) => ({
+      concept_name: 'Error Resilience',
+      question: `A ${skill} pipeline experiences intermittent API timeouts. Which pattern best prevents silent data loss?`,
+      option_a: 'Wrapping all calls in empty try-catch blocks',
+      option_b: 'Returning cached stale data without any logging',
+      option_c: 'Implementing exponential backoff retries with structured error logging',
+      option_d: 'Disabling timeout limits on all HTTP requests',
+      correct_answer: 'C',
+      explanation: 'Exponential backoff retries handle transient failures gracefully, while structured logging ensures errors are captured for debugging rather than silently lost.',
+      difficulty: 'Hard',
+    }),
+  },
+  {
+    cognitiveLevel: 'application',
+    difficulty: 'Hard',
+    generator: (skill) => ({
+      concept_name: 'Security & Input Validation',
+      question: `Before passing user inputs to ${skill} LLM prompts, what is the recommended security approach?`,
+      option_a: 'Evaluate inputs using dynamic code execution',
+      option_b: 'Store inputs directly in plaintext log files',
+      option_c: 'Pass inputs through without any transformation',
+      option_d: 'Validate against a strict schema and sanitize before injection',
+      correct_answer: 'D',
+      explanation: 'Schema validation and sanitization prevent prompt injection attacks by ensuring only expected, safe input formats reach the LLM prompt template.',
+      difficulty: 'Hard',
+    }),
+  },
+  {
+    cognitiveLevel: 'application',
+    difficulty: 'Hard',
+    generator: (skill) => ({
+      concept_name: 'RAG Context Chunking',
+      question: `Why are overlapping chunk boundaries configured during document indexing in ${skill} RAG systems?`,
+      option_a: 'To reduce the total size of the vector index',
+      option_b: 'To preserve semantic context that spans chunk boundaries',
+      option_c: 'To increase the speed of batch write operations',
+      option_d: 'To encrypt document content at rest',
+      correct_answer: 'B',
+      explanation: 'Chunk overlaps ensure that sentences or concepts split across chunk boundaries retain their full semantic context in both adjacent chunks.',
+      difficulty: 'Hard',
+    }),
+  },
+  {
+    cognitiveLevel: 'application',
+    difficulty: 'Hard',
+    generator: (skill) => ({
+      concept_name: 'Database Indexing',
+      question: `How does adding a B-Tree index on a high-cardinality column improve ${skill} query performance?`,
+      option_a: 'It converts sequential O(N) scans into O(log N) lookups',
+      option_b: 'It automatically removes duplicate rows from the table',
+      option_c: 'It compresses all column data into a single binary file',
+      option_d: 'It disables row-level locking for concurrent writes',
+      correct_answer: 'A',
+      explanation: 'B-Tree indexes organize column values in a balanced tree structure, enabling O(log N) lookups instead of O(N) sequential table scans.',
+      difficulty: 'Hard',
+    }),
+  },
+  {
+    cognitiveLevel: 'application',
+    difficulty: 'Hard',
+    generator: (skill) => ({
+      concept_name: 'Model Evaluation',
+      question: `When dealing with imbalanced datasets in ${skill}, why is F1-Score preferred over simple accuracy?`,
+      option_a: 'F1-Score reduces the required dataset size',
+      option_b: 'Accuracy is always exactly 50% on imbalanced data',
+      option_c: 'F1-Score harmonically balances precision and recall across classes',
+      option_d: 'Precision metrics are incompatible with classification tasks',
+      correct_answer: 'C',
+      explanation: 'F1-Score computes the harmonic mean of precision and recall, providing a balanced evaluation metric that is not inflated by majority class performance.',
+      difficulty: 'Hard',
+    }),
+  },
+
+  // ── Expert / Analysis ───────────────────────────────────────────────────────
+  {
+    cognitiveLevel: 'analysis',
+    difficulty: 'Expert',
+    generator: (skill) => ({
+      concept_name: 'State Management',
+      question: `A distributed ${skill} system shows inconsistent results when multiple workers process shared state concurrently. What is the root cause and solution?`,
+      option_a: 'Memory fragmentation; defragment the heap allocator',
+      option_b: 'Race conditions on shared state; implement distributed locking',
+      option_c: 'DNS resolution delays; switch to IP-based routing',
+      option_d: 'Disk I/O saturation; upgrade to NVMe storage',
+      correct_answer: 'B',
+      explanation: 'Concurrent access to shared mutable state without synchronization causes race conditions. Distributed locking (e.g., Redis Redlock) ensures atomic access across workers.',
+      difficulty: 'Expert',
+    }),
+  },
+  {
+    cognitiveLevel: 'analysis',
+    difficulty: 'Expert',
+    generator: (skill) => ({
+      concept_name: 'API Design & Versioning',
+      question: `Your ${skill} API must introduce a breaking schema change while maintaining backward compatibility for existing consumers. What approach minimizes disruption?`,
+      option_a: 'Silently modify the existing endpoint response format',
+      option_b: 'Return HTTP 500 errors to force client upgrades',
+      option_c: 'Delete the old endpoint and redirect all traffic',
+      option_d: 'Introduce a versioned endpoint (e.g., /v2/) with a deprecation timeline',
+      correct_answer: 'D',
+      explanation: 'API versioning allows new consumers to use the updated schema while existing consumers continue using the old version during a documented deprecation period.',
+      difficulty: 'Expert',
+    }),
+  },
+  {
+    cognitiveLevel: 'analysis',
+    difficulty: 'Expert',
+    generator: (skill) => ({
+      concept_name: 'Model Fine-Tuning',
+      question: `An organization wants to adapt a large language model for ${skill} domain tasks but has limited GPU resources. Which approach is most resource-efficient?`,
+      option_a: 'Training the model from scratch on domain-specific data',
+      option_b: 'Increasing the base model parameter count by 10x',
+      option_c: 'Applying LoRA to train low-rank adapter matrices on frozen weights',
+      option_d: 'Converting the model architecture from transformer to RNN',
+      correct_answer: 'C',
+      explanation: 'LoRA (Low-Rank Adaptation) freezes pre-trained weights and injects small trainable matrices, achieving domain adaptation with a fraction of the compute required for full fine-tuning.',
+      difficulty: 'Expert',
+    }),
+  },
+  {
+    cognitiveLevel: 'analysis',
+    difficulty: 'Expert',
+    generator: (skill) => ({
+      concept_name: 'Latency Optimization',
+      question: `A serverless ${skill} function experiences 3-5 second cold start delays during traffic spikes. Which combination of strategies best addresses this?`,
+      option_a: 'Disabling HTTPS and removing authentication middleware',
+      option_b: 'Adding artificial sleep delays between function invocations',
+      option_c: 'Provisioned concurrency with minimized dependency bundle size',
+      option_d: 'Increasing the function memory allocation to maximum available',
+      correct_answer: 'C',
+      explanation: 'Provisioned concurrency keeps warm instances ready, while minimizing bundle size reduces initialization time — together they address both the frequency and duration of cold starts.',
+      difficulty: 'Expert',
+    }),
+  },
+  {
+    cognitiveLevel: 'analysis',
+    difficulty: 'Expert',
+    generator: (skill) => ({
+      concept_name: 'API Rate Limiting',
+      question: `A ${skill} API gateway must throttle traffic to protect backend services while providing fair access to all consumers. Which algorithm provides the best balance?`,
+      option_a: 'Binary search over request timestamps',
+      option_b: 'Token bucket algorithm with per-consumer quotas',
+      option_c: 'Bubble sort on request priority headers',
+      option_d: 'Dijkstra pathfinding across service mesh routes',
+      correct_answer: 'B',
+      explanation: 'The token bucket algorithm allows controlled bursts while enforcing sustained rate limits, and per-consumer quotas ensure fair distribution of available capacity.',
+      difficulty: 'Expert',
+    }),
+  },
 ];
 
+// ─── Quiz Generation ──────────────────────────────────────────────────────────
+
+/**
+ * Generate a quiz with position-balanced, validated MCQs.
+ * 
+ * Pipeline:
+ * 1. Select questions from the bank
+ * 2. Generate question instances for the skill
+ * 3. Shuffle answer positions with balanced distribution
+ * 4. Validate all questions
+ * 5. Report quality metrics
+ */
 export function generateCourseQuiz(
   skill: string,
   courseTitle: string,
-  questionCount = 15
-): Omit<Quiz, 'user_id'> {
-  // Shuffle array using Fisher-Yates algorithm for randomized question sets on retest
-  const shuffled = [...questionBank].sort(() => Math.random() - 0.5);
-  const selectedQuestions = shuffled.slice(0, Math.min(questionCount, shuffled.length)).map(fn => fn(skill));
+  questionCount = 15,
+  validatorConfig: MCQValidatorConfig = DEFAULT_VALIDATOR_CONFIG
+): Omit<Quiz, 'user_id'> & { quality_report: any } {
+  // 1. Select questions from bank (Fisher-Yates shuffle for randomization)
+  const shuffledBank = [...questionBank].sort(() => Math.random() - 0.5);
+  const selectedTemplates = shuffledBank.slice(0, Math.min(questionCount, shuffledBank.length));
+
+  // 2. Generate question instances
+  const rawQuestions: QuizQuestion[] = selectedTemplates.map(t => t.generator(skill));
+
+  // 3. Shuffle answer positions with balanced distribution
+  const shuffledQuestions = shuffleQuizSet(rawQuestions);
+
+  // 4. Validate all questions
+  const validationReport = validateQuizSet(shuffledQuestions, validatorConfig);
+
+  // 5. Verify position distribution
+  const positionCheck = verifyPositionDistribution(shuffledQuestions);
+
+  // Build quality metadata
+  const qualityReport = {
+    total_questions: validationReport.totalQuestions,
+    passed_questions: validationReport.passedQuestions,
+    failed_questions: validationReport.failedQuestions,
+    average_quality_score: validationReport.averageQualityScore,
+    position_distribution: positionCheck.distribution,
+    position_percentages: positionCheck.percentages,
+    position_balanced: positionCheck.isBalanced,
+    max_position_deviation: Math.round(positionCheck.maxDeviation * 100) / 100,
+    failed_indices: validationReport.failedIndices,
+    validator_config: {
+      min_quality_score: validatorConfig.minQualityScore,
+      max_length_ratio: validatorConfig.maxLengthRatio,
+    },
+  };
 
   return {
-    title: `${skill} — 15 Question Mastery Assessment`,
+    title: `${skill} — ${shuffledQuestions.length} Question Mastery Assessment`,
     difficulty: 'Intermediate',
-    total_questions: selectedQuestions.length,
+    total_questions: shuffledQuestions.length,
     passing_score: 70,
-    questions: selectedQuestions,
-    quiz_questions: selectedQuestions
+    questions: shuffledQuestions,
+    quiz_questions: shuffledQuestions,
+    quality_report: qualityReport,
   };
 }

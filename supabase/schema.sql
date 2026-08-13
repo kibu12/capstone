@@ -323,3 +323,74 @@ CREATE TABLE IF NOT EXISTS public.interview_assessments (
 ALTER TABLE public.interview_assessments ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users manage own interview assessments" ON public.interview_assessments FOR ALL USING (auth.uid() = user_id);
 
+-- 9. skill_profiles (Structured Skill Vector per User)
+CREATE TABLE IF NOT EXISTS public.skill_profiles (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+    skill TEXT NOT NULL,
+    proficiency FLOAT DEFAULT 0.0, -- 0.0 to 1.0
+    confidence FLOAT DEFAULT 0.3, -- 0.0 to 1.0
+    evidence_count INTEGER DEFAULT 1,
+    status TEXT DEFAULT 'unknown', -- strong, developing, weak, unknown
+    trend TEXT DEFAULT 'unknown', -- improving, stable, declining, unknown
+    last_assessed TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+    UNIQUE(user_id, skill)
+);
+
+ALTER TABLE public.skill_profiles ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users manage own skill profiles" ON public.skill_profiles FOR ALL USING (auth.uid() = user_id);
+
+-- 10. agent_logs (Observability and Telemetry)
+CREATE TABLE IF NOT EXISTS public.agent_logs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    agent_name TEXT NOT NULL,
+    input_summary TEXT,
+    output_summary TEXT,
+    model TEXT,
+    model_parameters JSONB DEFAULT '{}'::jsonb,
+    validation_result TEXT DEFAULT 'passed',
+    confidence FLOAT DEFAULT 1.0,
+    latency_ms INTEGER DEFAULT 0,
+    token_usage JSONB,
+    errors JSONB DEFAULT '[]'::jsonb,
+    metadata JSONB DEFAULT '{}'::jsonb,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+ALTER TABLE public.agent_logs ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Allow public read access to agent logs" ON public.agent_logs FOR SELECT USING (true);
+CREATE POLICY "Allow system insert to agent logs" ON public.agent_logs FOR INSERT WITH CHECK (true);
+
+-- 11. recommendation_history (Prevents Feedback Loops)
+CREATE TABLE IF NOT EXISTS public.recommendation_history (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+    skill TEXT NOT NULL,
+    content_id TEXT,
+    status TEXT DEFAULT 'recommended', -- recommended, learning, completed, rejected, mastered
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+ALTER TABLE public.recommendation_history ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users manage own recommendation history" ON public.recommendation_history FOR ALL USING (auth.uid() = user_id);
+
+-- 12. evaluation_metrics (Golden Dataset Run Results & Quality Metrics)
+CREATE TABLE IF NOT EXISTS public.evaluation_metrics (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    test_run_id TEXT NOT NULL,
+    pass_rate FLOAT NOT NULL,
+    total_tests INTEGER NOT NULL,
+    passed_tests INTEGER NOT NULL,
+    failed_tests INTEGER NOT NULL,
+    execution_time_ms INTEGER NOT NULL,
+    suite_results JSONB DEFAULT '[]'::jsonb,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+ALTER TABLE public.evaluation_metrics ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Allow public read access to evaluation metrics" ON public.evaluation_metrics FOR SELECT USING (true);
+CREATE POLICY "Allow system insert to evaluation metrics" ON public.evaluation_metrics FOR INSERT WITH CHECK (true);
+
+

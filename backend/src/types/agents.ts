@@ -12,6 +12,16 @@ export interface RetrievedDocument {
     growthRate?: string;
   };
   score?: number;
+  /** Enriched retrieval metadata from hybrid search */
+  retrievalMetadata?: {
+    keywordScore: number;
+    metadataScore: number;
+    finalScore: number;
+    source: string;
+    contentType: string;
+    skills: string[];
+    topics: string[];
+  };
 }
 
 export interface ResearchResult {
@@ -52,4 +62,11 @@ export interface CareerAgentState {
   recommendation?: CareerRecommendation;
   projects?: Omit<ProjectRecommendation, 'user_id'>[];
   errors?: string[];
+  /** User skill profile from the User Profile Agent */
+  userSkillProfile?: any;
+  /** Career prediction result from the Prediction Engine */
+  careerPrediction?: any;
+  /** Agent execution logs for observability */
+  agentLogs?: { agentName: string; latencyMs: number; status: string }[];
 }
+
