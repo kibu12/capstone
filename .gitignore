@@ -45,3 +45,12 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# AI Models & Large Weight Files
+*.safetensors
+*.gguf
+*.bin
+career_agent_gguf/
+training/career_agent_gguf/
+outputs/
+

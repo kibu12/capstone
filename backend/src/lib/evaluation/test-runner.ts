@@ -116,7 +116,7 @@ function runRAGTests(): TestSuiteResult {
     const docs = retrieveByRole(golden.role, 3);
     const hasRelevant = docs.some(
       d => d.metadata.role.toLowerCase().includes(golden.role.toLowerCase()) ||
-           golden.role.toLowerCase().includes(d.metadata.role.toLowerCase())
+        golden.role.toLowerCase().includes(d.metadata.role.toLowerCase())
     );
     results.push({
       testName: `RAG Retrieval for ${golden.role}`,
@@ -180,7 +180,7 @@ function runCareerPredictionTests(): TestSuiteResult {
         skillGaps: golden.skills.map(s => ({
           skillName: s,
           currentLevel: golden.experienceLevel === 'Mid-Level Professional' ? 75 :
-                        golden.experienceLevel === 'Junior Professional' ? 60 : 40,
+            golden.experienceLevel === 'Junior Professional' ? 60 : 40,
           requiredLevel: 80,
           priority: 'High' as const,
           category: 'Technical',
@@ -340,3 +340,16 @@ export function runFullTestSuite(): FullTestReport {
     executionTimeMs: Date.now() - start,
   };
 }
+
+if (require.main === module) {
+  console.log('='.repeat(60));
+  console.log('🧪 Running Career PathFinder Golden Evaluation Test Suite');
+  console.log('='.repeat(60));
+  const report = runFullTestSuite();
+  console.log(`\nResults: ${report.totalPassed}/${report.totalTests} Passed (${report.passRate}%) in ${report.executionTimeMs}ms\n`);
+  report.suites.forEach(s => {
+    console.log(`  • ${s.suiteName}: ${s.passed}/${s.totalTests} passed`);
+  });
+  console.log('='.repeat(60));
+}
+

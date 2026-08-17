@@ -1,5 +1,6 @@
 import { CareerAgentState, RoadmapResult } from '../../types/agents';
 import { ProjectRecommendation } from '../../types/career';
+import { LLMClient } from '../ai/llm-client';
 
 export async function runRoadmapAgent(state: CareerAgentState): Promise<CareerAgentState> {
   const { research, skillGaps } = state;
@@ -7,10 +8,47 @@ export async function runRoadmapAgent(state: CareerAgentState): Promise<CareerAg
     throw new Error('Research & Skill Gap analysis are required for Roadmap Agent');
   }
 
-  // Construct Roadmap phases based on priority gaps
   const criticalGaps = skillGaps.filter(g => g.priority === 'High' || g.priority === 'Medium');
   const foundationSkills = skillGaps.filter(g => g.priority === 'Low').map(g => g.skillName);
 
+  // 1. Try Fine-Tuned / Cloud LLM Model first
+  try {
+    const prioritySkillNames = criticalGaps.map(g => g.skillName);
+    const llmRoadmap = await LLMClient.generateRoadmap(research.role, prioritySkillNames);
+
+    if (llmRoadmap && Array.isArray(llmRoadmap.phases) && llmRoadmap.phases.length > 0) {
+      const projects: Omit<ProjectRecommendation, 'user_id'>[] = [
+        {
+          title: `Personalized ${research.role} Portal`,
+          description: `Create a custom software solution integrating ${llmRoadmap.phases[0]?.skills?.join(', ') || 'core competencies'}.`,
+          difficulty: 'Intermediate',
+          skills: llmRoadmap.phases[0]?.skills || [],
+          status: 'Not Started',
+          estimated_time: '15-20 hours',
+          portfolio_value: 'High'
+        },
+        {
+          title: `Production-ready ${research.role} Pipeline`,
+          description: `Build a production-grade system addressing advanced skills: ${llmRoadmap.phases[1]?.skills?.join(', ') || 'advanced patterns'}.`,
+          difficulty: 'Advanced',
+          skills: llmRoadmap.phases[1]?.skills || [],
+          status: 'Not Started',
+          estimated_time: '30 hours',
+          portfolio_value: 'Outstanding'
+        }
+      ];
+
+      return {
+        ...state,
+        roadmap: llmRoadmap,
+        projects
+      };
+    }
+  } catch (err) {
+    // Graceful fallback
+  }
+
+  // 2. Deterministic Roadmap fallback
   const phases: RoadmapResult['phases'] = [
     {
       phaseNumber: 1,

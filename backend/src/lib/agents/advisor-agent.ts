@@ -15,6 +15,7 @@ import { CareerRecommendation } from '../../types/career';
 import { predictCareerReadiness, CareerPredictionResult, DEFAULT_PREDICTION_WEIGHTS } from './career-prediction-engine';
 import { buildSkillProfile, getSkillSummary } from './user-profile-agent';
 import { logAgentExecution, startAgentTimer } from './agent-logger';
+import { LLMClient } from '../ai/llm-client';
 
 export async function runAdvisorAgent(state: CareerAgentState): Promise<CareerAgentState> {
   const timer = startAgentTimer();
@@ -120,42 +121,24 @@ export async function runAdvisorAgent(state: CareerAgentState): Promise<CareerAg
     ];
   }
 
-  // ── Optional LLM enhancement ────────────────────────────────────────────────
-  if (process.env.AI_API_KEY) {
-    try {
-      const { queryAIModel } = require('../ai/career-engine');
-      const prompt = `
-        User target role: ${research.role}
-        User background: ${assessment.experience_level}
-        Resume uploaded: ${assessment.resume_filename || 'None'}
-        Resume Context: ${assessment.resume_text ? assessment.resume_text.substring(0, 1000) : 'None'}
-        Interests: ${assessment.interests.join(', ')}
-        Existing skills: ${strengths.join(', ')}
-        Required skills gaps: ${prioritySkills.join(', ')}
-        Career readiness score: ${prediction.careerMatch}%
-        Confidence level: ${prediction.confidenceLevel}
-        
-        CRITICAL RULES:
-        1. NEVER say "You will become X" or make absolute career predictions
-        2. Always use language like "Current readiness is X%" or "Based on evidence..."
-        3. Distinguish facts from inferences and recommendations
-        4. Do NOT fabricate courses, certifications, or statistics
-        
-        Generate a JSON object with:
-        "summary": A paragraph describing current readiness with evidence. Use "Current ${research.role} readiness: ${prediction.careerMatch}%" language.
-        "reasoning": String array with exactly 3 evidence-based reasons. Prefix each with [FACT], [INFERENCE], or [RECOMMENDATION].
-        
-        Ensure valid JSON only. No markdown formatting.
-      `;
-      const responseText = await queryAIModel(prompt, "You are a professional career advisor who provides evidence-based, calibrated assessments. Never make absolute predictions.");
-      const cleaned = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
-      const parsed = JSON.parse(cleaned);
-      if (parsed.summary) summary = parsed.summary;
-      if (Array.isArray(parsed.reasoning)) reasoning = parsed.reasoning;
-    } catch (e: any) {
-      errors.push(`LLM Advisor enhancement failed: ${e.message}`);
-      console.warn("LLM Advisor Agent query failed, using deterministic output:", e.message);
+  // ── Optional Fine-Tuned / Cloud LLM enhancement ────────────────────────────
+  try {
+    const llmAdvice = await LLMClient.generateAdvisory(
+      research.role,
+      assessment.experience_level || 'Entry Level',
+      {
+        assessments: prediction.evidenceSummary.totalAssessments || 1,
+        quizzes: prediction.evidenceSummary.totalQuestions || 0,
+        avgQuiz: Math.round(prediction.evidenceSummary.averageScore || 0),
+        projects: prediction.evidenceSummary.totalProjects || 0
+      }
+    );
+    if (llmAdvice && llmAdvice.summary && Array.isArray(llmAdvice.reasoning)) {
+      summary = llmAdvice.summary;
+      reasoning = llmAdvice.reasoning;
     }
+  } catch (e: any) {
+    // Retain deterministic prediction summary
   }
 
   // ── Build recommendation ────────────────────────────────────────────────────

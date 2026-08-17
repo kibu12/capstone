@@ -33,6 +33,7 @@ export default function LoginForm() {
     try {
       localStorage.clear();
     } catch (e) {}
+    router.push('/');
   };
 
   const handleLogin = async (e: React.FormEvent) => {

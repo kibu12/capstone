@@ -1,23 +1,41 @@
 import { CareerAgentState, ResearchResult } from '../../types/agents';
 import { retrieveCareerContext } from '../rag/retriever';
+import { LLMClient } from '../ai/llm-client';
 
 export async function runResearchAgent(state: CareerAgentState): Promise<CareerAgentState> {
-  const { target_role, interests, experience_level, skills } = state.assessment;
+  const { target_role, interests, experience_level } = state.assessment;
 
-  // Retrieve RAG sources
-  const query = `${target_role} ${interests.join(' ')}`;
+  // 1. Retrieve RAG sources
+  const query = `${target_role} ${(interests || []).join(' ')}`;
   const sources = retrieveCareerContext(query);
+  const matchedDoc = sources[0];
+  const careerContext = matchedDoc?.content || '';
 
-  // Parse required skills from context or default
+  // 2. Try Fine-Tuned / Cloud LLM Model first
+  try {
+    const llmResearch = await LLMClient.generateResearch(
+      target_role,
+      experience_level || 'Entry Level',
+      interests || [],
+      careerContext
+    );
+    if (llmResearch && llmResearch.requiredSkills && llmResearch.requiredSkills.length > 0) {
+      return {
+        ...state,
+        retrievedContext: sources,
+        research: llmResearch
+      };
+    }
+  } catch (err) {
+    // Graceful fallback to deterministic parsing
+  }
+
+  // 3. Deterministic RAG parsing fallback
   let requiredSkills: { name: string; requiredLevel: number; category: string }[] = [];
   let emergingSkills: string[] = [];
   let importantTechnologies: string[] = [];
-  let careerContext = '';
-
-  const matchedDoc = sources[0];
 
   if (matchedDoc) {
-    careerContext = matchedDoc.content;
     const contentLower = matchedDoc.content.toLowerCase();
 
     // Map skills matching standard names

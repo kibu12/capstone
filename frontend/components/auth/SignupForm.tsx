@@ -35,6 +35,7 @@ export default function SignupForm() {
     try {
       localStorage.clear();
     } catch (e) {}
+    router.push('/');
   };
 
   const handleSignUp = async (e: React.FormEvent) => {
