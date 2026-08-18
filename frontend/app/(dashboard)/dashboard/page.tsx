@@ -167,34 +167,34 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Top Welcome Hero Banner */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 p-6 text-white shadow-xl border border-slate-800">
-        <div className="absolute right-0 top-0 -mr-12 -mt-12 w-64 h-64 rounded-full bg-indigo-500/10 blur-3xl pointer-events-none" />
-        <div className="absolute left-1/3 bottom-0 -mb-12 w-48 h-48 rounded-full bg-purple-500/10 blur-2xl pointer-events-none" />
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-blue-50/90 via-slate-50 to-indigo-50/60 p-6 sm:p-8 text-slate-900 shadow-sm border border-slate-200/90">
+        <div className="absolute right-0 top-0 -mr-12 -mt-12 w-64 h-64 rounded-full bg-blue-400/10 blur-3xl pointer-events-none" />
+        <div className="absolute left-1/3 bottom-0 -mb-12 w-48 h-48 rounded-full bg-indigo-400/10 blur-2xl pointer-events-none" />
 
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="space-y-2">
+          <div className="space-y-2.5">
             <div className="flex items-center gap-2">
-              <Badge variant="purple" className="bg-indigo-500/20 text-indigo-300 border-indigo-500/40">
-                <Sparkles className="w-3 h-3 text-indigo-300 mr-1" /> Target Role Locked
-              </Badge>
-              <span className="text-[11px] text-slate-400 font-mono">• Vector Match {dynamicMatchScore}.4%</span>
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-100 text-blue-800 text-[11px] font-semibold font-sans">
+                <Sparkles className="w-3 h-3 text-blue-600 mr-0.5" /> Target Role Locked
+              </span>
+              <span className="text-[11px] text-slate-500 font-sans">• Vector Match {dynamicMatchScore}.4%</span>
             </div>
-            <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
-              Welcome back, <span className="bg-gradient-to-r from-indigo-200 via-purple-200 to-white bg-clip-text text-transparent">{userName}</span>
+            <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight text-slate-900 font-display">
+              Welcome back, <span className="text-blue-600">{userName}</span>
             </h1>
-            <p className="text-xs text-slate-300 max-w-xl leading-relaxed">
-              Target role is set to <strong className="text-white font-semibold">{recommendation.recommended_role}</strong>. Your AI agents have processed your skill matrix and roadmap checkpoints.
+            <p className="text-xs sm:text-sm text-slate-600 max-w-xl leading-relaxed font-sans">
+              Target role is set to <strong className="text-slate-900 font-semibold">{recommendation.recommended_role}</strong>. Your AI agents have processed your skill matrix and roadmap checkpoints.
             </p>
           </div>
 
           <div className="flex items-center gap-3 shrink-0">
             <Link href="/onboarding?retake=true">
-              <Button variant="outline" size="sm" className="text-xs bg-slate-900/60 border-slate-700 text-slate-200 hover:bg-slate-800 hover:text-white">
+              <Button variant="outline" size="sm" className="text-xs bg-white border-slate-200 text-slate-700 hover:bg-slate-50 hover:text-slate-900 rounded-2xl shadow-2xs">
                 Re-take Diagnostic
               </Button>
             </Link>
             <Link href="/roadmap">
-              <Button variant="primary" size="sm" className="text-xs">
+              <Button variant="primary" size="sm" className="text-xs bg-blue-600 hover:bg-blue-700 text-white rounded-2xl shadow-md">
                 <span>View Roadmap</span>
                 <ArrowRight className="w-3.5 h-3.5 ml-1" />
               </Button>
@@ -278,9 +278,9 @@ export default function DashboardPage() {
               <CardTitle>Priority Skill Matrix</CardTitle>
               <CardDescription>Target technical requirements for {recommendation.recommended_role}</CardDescription>
             </div>
-            <Link href="/skills">
+            <Link href="/learning">
               <Button variant="outline" size="sm" className="text-xs">
-                View Skill Matrix
+                View Skills & Learning Hub
               </Button>
             </Link>
           </CardHeader>
@@ -302,9 +302,6 @@ export default function DashboardPage() {
                   </div>
 
                   <div className="flex items-center gap-2 shrink-0">
-                    <Badge variant={skill.priority === 'High' ? 'danger' : 'warning'}>
-                      {skill.priority} Priority
-                    </Badge>
                     <Badge variant={skill.status === 'Completed' ? 'success' : 'secondary'}>
                       {skill.status}
                     </Badge>
@@ -323,9 +320,9 @@ export default function DashboardPage() {
               <CardDescription>Recommended next steps</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3 p-4">
-              <Link href="/skills" className="p-3 rounded-xl border border-slate-200/80 bg-slate-50/50 hover:bg-indigo-50/40 hover:border-indigo-200 transition-all block group">
+              <Link href="/learning" className="p-3 rounded-xl border border-slate-200/80 bg-slate-50/50 hover:bg-indigo-50/40 hover:border-indigo-200 transition-all block group">
                 <div className="flex items-center justify-between text-xs font-bold text-slate-900">
-                  <span>Review {highPriorityGaps.length} High-Priority Gaps</span>
+                  <span>Review Technical Skills ({skillGaps.length})</span>
                   <ChevronRight className="w-3.5 h-3.5 text-slate-400 group-hover:translate-x-0.5 text-indigo-600 transition-transform" />
                 </div>
                 <p className="text-[11px] text-slate-500 mt-1">Focus on core requirements in target role matrix</p>
@@ -350,19 +347,19 @@ export default function DashboardPage() {
           </Card>
 
           {interviewAssessment && (
-            <Card className="bg-gradient-to-br from-slate-900 to-indigo-950 text-white border border-slate-800 shadow-lg">
-              <CardHeader className="border-b border-slate-800">
-                <CardTitle className="text-indigo-400 text-xs uppercase tracking-wider font-mono">Interview Readiness</CardTitle>
-                <div className="text-3xl font-extrabold text-white mt-1 tracking-tight">{interviewAssessment.overall_readiness_score}%</div>
+            <Card className="bg-white text-slate-900 border border-slate-200/90 shadow-sm rounded-3xl overflow-hidden">
+              <CardHeader className="border-b border-slate-100 bg-slate-50/50">
+                <CardTitle className="text-blue-600 text-xs uppercase tracking-wider font-sans font-bold">Interview Readiness</CardTitle>
+                <div className="text-3xl font-extrabold text-slate-900 mt-1 tracking-tight font-display">{interviewAssessment.overall_readiness_score}%</div>
               </CardHeader>
               <CardContent className="pt-4">
-                <Badge variant="purple" className="bg-indigo-500/20 text-indigo-300 border-indigo-500/40">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/70 font-sans">
                   Level: {interviewAssessment.readiness_level}
-                </Badge>
+                </span>
               </CardContent>
-              <CardFooter className="bg-slate-950/80 border-t border-slate-800/80">
+              <CardFooter className="bg-slate-50 border-t border-slate-100">
                 <Link href="/interview" className="w-full">
-                  <Button variant="outline" size="sm" className="w-full text-xs text-slate-200 border-slate-700 bg-slate-900/80 hover:bg-slate-800 hover:text-white">
+                  <Button variant="outline" size="sm" className="w-full text-xs text-slate-700 border-slate-200 bg-white hover:bg-slate-50 hover:text-slate-900 rounded-2xl shadow-2xs">
                     <span>View Validation Report</span>
                     <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
                   </Button>

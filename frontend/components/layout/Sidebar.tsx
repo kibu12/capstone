@@ -54,15 +54,13 @@ export default function Sidebar() {
     {
       label: 'INTELLIGENCE',
       items: [
-        { name: 'Skill Matrix', path: '/skills', icon: BookOpen },
-        { name: 'Learning Modules', path: '/learning', icon: GraduationCap },
-        { name: 'Roadmap', path: '/roadmap', icon: Compass },
+        { name: 'Skills & Learning Hub', path: '/learning', icon: GraduationCap },
+        { name: 'Sequential Roadmap', path: '/roadmap', icon: Compass },
       ]
     },
     {
       label: 'VALIDATION & BUILDS',
       items: [
-        { name: 'ATS Resume Scanner', path: '/ats-checker', icon: FileCheck },
         { name: 'MCQ Assessments', path: '/quiz', icon: HelpCircle },
         { name: 'Portfolio Capstones', path: '/projects', icon: FolderHeart },
         { name: 'Interview Readiness', path: '/interview', icon: CheckCircle },

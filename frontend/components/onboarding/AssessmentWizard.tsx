@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import { supabase } from '@/lib/supabase/client';
 import {
   clearExistingCareerData,
@@ -21,12 +22,28 @@ import {
 import { runCareerAnalysis, runLearningAgents } from '@/lib/api-client';
 import { SkillGapResult } from '@/types/agents';
 import { SkillGap } from '@/types/career';
-import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
-import { Select } from '@/components/ui/Select';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/Card';
 import AgentPipeline from '@/components/ai/AgentPipeline';
-import { UploadCloud, FileText, CheckCircle2, Sparkles, Loader2, X, Paperclip, Zap } from 'lucide-react';
+import {
+  UploadCloud,
+  FileText,
+  CheckCircle2,
+  Sparkles,
+  Loader2,
+  X,
+  Compass,
+  ArrowRight,
+  ArrowLeft,
+  Target,
+  Code2,
+  Cpu,
+  Brain,
+  ShieldCheck,
+  Check,
+  Plus,
+  Briefcase,
+  GraduationCap,
+  Layers,
+} from 'lucide-react';
 
 export default function AssessmentWizard() {
   const router = useRouter();
@@ -36,10 +53,18 @@ export default function AssessmentWizard() {
   const [step, setStep] = useState(1);
   const [experience, setExperience] = useState('Beginner');
 
-  const [interests, setInterests] = useState<string[]>([]);
+  const [interests, setInterests] = useState<string[]>([
+    'Artificial Intelligence',
+    'Software Development',
+  ]);
   const [customInterest, setCustomInterest] = useState('');
 
-  const [skills, setSkills] = useState<string[]>([]);
+  const [skills, setSkills] = useState<string[]>([
+    'Python',
+    'JavaScript',
+    'React',
+    'SQL',
+  ]);
   const [customSkill, setCustomSkill] = useState('');
 
   const [targetRole, setTargetRole] = useState('AI Engineer');
@@ -160,7 +185,6 @@ export default function AssessmentWizard() {
           rawText = file.name;
         }
 
-        // Clean PDF binary artifacts (%PDF, stream bytes, obj references)
         const cleanedText = rawText
           .replace(/%PDF-[\d\.]+/g, '')
           .replace(/<<[\s\S]*?>>/g, '')
@@ -231,11 +255,11 @@ export default function AssessmentWizard() {
     const timer = (ms: number) => new Promise((res) => setTimeout(res, ms));
 
     await timer(800);
-    setPipelineStep(1); // Skill gap analysis
+    setPipelineStep(1);
     await timer(1000);
-    setPipelineStep(2); // Roadmap construction
+    setPipelineStep(2);
     await timer(1000);
-    setPipelineStep(3); // Advisor evaluation
+    setPipelineStep(3);
     await timer(800);
 
     try {
@@ -253,14 +277,12 @@ export default function AssessmentWizard() {
         resume_filename: resumeFile?.name || undefined
       };
 
-      // Run orchestrator pipeline
       const analysisState = await runCareerAnalysis(userId, profile, assessment);
 
       if (analysisState.errors && analysisState.errors.length > 0) {
         throw new Error(analysisState.errors[0]);
       }
 
-      // Clear old details and write persistent DB values
       try { await clearExistingCareerData(userId); } catch (e) { console.warn("clearExistingCareerData skipped:", e); }
       try { await saveAssessment(userId, assessment); } catch (e) { console.warn("saveAssessment skipped:", e); }
 
@@ -338,18 +360,14 @@ export default function AssessmentWizard() {
         } catch (e) { console.warn("saveProjects skipped:", e); }
       }
 
-      // Update target profile meta metrics
       try {
         await updateProfile(userId, {
           target_role: targetRole,
           experience_level: experience,
           career_goal: careerGoal
         });
-      } catch (e) {
-        // Silently continue
-      }
+      } catch (e) {}
 
-      // Run extended Learning Intelligence & Interview Agents
       try {
         const learningOutput = await runLearningAgents(analysisState);
         if (learningOutput && learningOutput.courses.length > 0) {
@@ -410,281 +428,558 @@ export default function AssessmentWizard() {
     }
   };
 
-  const experienceOptions = [
-    { value: 'Student', label: 'Student' },
-    { value: 'Beginner', label: 'Beginner' },
-    { value: 'Junior Professional', label: 'Junior Professional' },
-    { value: 'Mid-Level Professional', label: 'Mid-Level Professional' },
-    { value: 'Career Switcher', label: 'Career Switcher' }
+  const experienceList = [
+    { id: 'Student', title: 'Student', desc: 'Enrolled in university or bootcamp', icon: GraduationCap },
+    { id: 'Beginner', title: 'Beginner', desc: '0 - 1 year of hands-on coding', icon: Brain },
+    { id: 'Junior Professional', title: 'Junior Professional', desc: '1 - 3 years industry experience', icon: Briefcase },
+    { id: 'Mid-Level Professional', title: 'Mid-Level Professional', desc: '3 - 6 years production engineering', icon: Cpu },
+    { id: 'Career Switcher', title: 'Career Switcher', desc: 'Transitioning from another discipline', icon: Layers },
   ];
 
-  const targetRoleOptions = [
-    { value: 'AI Engineer', label: 'AI Engineer' },
-    { value: 'Machine Learning Engineer', label: 'Machine Learning Engineer' },
-    { value: 'Full Stack Developer', label: 'Full Stack Developer' },
-    { value: 'Data Scientist', label: 'Data Scientist' },
-    { value: 'Data Analyst', label: 'Data Analyst' },
-    { value: 'Cloud Engineer', label: 'Cloud Engineer' },
-    { value: 'Cybersecurity Engineer', label: 'Cybersecurity Engineer' },
-    { value: 'Product Manager', label: 'Product Manager' },
-    { value: 'UI/UX Designer', label: 'UI/UX Designer' },
-    { value: 'DevOps Engineer', label: 'DevOps Engineer' }
+  const popularRoles = [
+    { role: 'AI Engineer', tag: 'High Demand', desc: 'LLMs, RAG & Vector Systems' },
+    { role: 'Machine Learning Engineer', tag: 'Deep Tech', desc: 'Model Training & MLOps' },
+    { role: 'Full Stack Developer', tag: 'Evergreen', desc: 'Modern React & Backend APIs' },
+    { role: 'Cloud Engineer', tag: 'Infrastructure', desc: 'AWS, Kubernetes & Terraform' },
+    { role: 'Data Scientist', tag: 'Analytics', desc: 'Statistical Modeling & Python' },
+    { role: 'Cybersecurity Engineer', tag: 'Security', desc: 'Security Architecture & Auditing' },
   ];
 
-  const interestOptions = [
+  const availableInterests = [
     'Artificial Intelligence', 'Software Development', 'Data Science',
-    'Cybersecurity', 'Cloud Computing', 'UI/UX', 'Product Management',
-    'Business', 'Finance', 'Robotics'
+    'Cybersecurity', 'Cloud Computing', 'UI/UX Design', 'System Architecture',
+    'Robotics', 'DevOps & CI/CD', 'Web3 & Blockchain'
   ];
 
-  const skillOptions = [
-    'Python', 'Java', 'JavaScript', 'React', 'SQL',
-    'Machine Learning', 'Deep Learning', 'Git', 'AWS', 'Docker', 'Figma'
+  const commonSkills = [
+    'Python', 'Java', 'JavaScript', 'TypeScript', 'React', 'SQL',
+    'Machine Learning', 'Deep Learning', 'PyTorch', 'Docker', 'Kubernetes',
+    'AWS', 'Git', 'Next.js', 'PostgreSQL', 'FastAPI', 'Node.js'
+  ];
+
+  const careerGoalOptions = [
+    'Get my first tech job',
+    'Level up to Senior Engineer',
+    'Pivot into AI & Machine Learning',
+    'Maximize compensation & land top offers'
   ];
 
   if (analyzing) {
     return (
-      <div className="max-w-md mx-auto space-y-6 pt-12">
-        <h2 className="text-xl font-bold text-center text-slate-800">
-          {resumeFile ? 'Analyzing resume & career profile...' : 'Analyzing your career profile...'}
-        </h2>
+      <div className="w-full max-w-5xl mx-auto py-8 px-4 sm:px-6 space-y-8 font-sans">
+        <div className="text-center space-y-3">
+          <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center mx-auto shadow-xs animate-bounce">
+            <Sparkles className="w-6 h-6" />
+          </div>
+          <h2 className="text-2xl sm:text-4xl font-extrabold text-slate-900 font-display tracking-tight">
+            {resumeFile ? 'Analyzing Resume & Synthesizing Multi-Agent RAG Model...' : 'Generating Your AI Career Architecture...'}
+          </h2>
+          <p className="text-xs sm:text-sm text-slate-500 max-w-xl mx-auto font-sans">
+            Evaluating competency deltas against production job vector criteria and building personalized roadmap.
+          </p>
+        </div>
+
         <AgentPipeline currentStep={pipelineStep} active={analyzing} />
       </div>
     );
   }
 
+  const stepProgress = Math.round((step / 4) * 100);
+
   return (
-    <Card className="w-full max-w-lg mx-auto border-slate-100 shadow-xl bg-white">
-      <CardHeader>
-        <div className="flex justify-between items-center text-xs font-semibold text-indigo-600 uppercase tracking-wider mb-2">
-          <span>Step {step} of 4</span>
-          <span>{Math.round((step / 4) * 100)}% Complete</span>
+    <div className="w-full max-w-6xl mx-auto font-sans selection:bg-blue-600 selection:text-white">
+      {/* ─── TOP WORKSPACE BAR ─── */}
+      <div className="flex items-center justify-between pb-6 mb-6 border-b border-slate-200">
+        <Link href="/" className="flex items-center gap-2.5 group">
+          <div className="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center shadow-xs">
+            <Compass className="w-4 h-4" />
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-base font-bold text-slate-900 tracking-tight font-display">
+              CareerPath
+            </span>
+            <span className="text-slate-300 font-light">|</span>
+            <span className="text-sm font-medium text-slate-600">
+              Diagnostic Studio
+            </span>
+          </div>
+        </Link>
+
+        <div className="flex items-center gap-3">
+          <span className="text-xs font-semibold text-slate-500">
+            Step {step} of 4 ({stepProgress}%)
+          </span>
+          <div className="w-24 h-2 bg-slate-200 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-blue-600 rounded-full transition-all duration-500 ease-out"
+              style={{ width: `${stepProgress}%` }}
+            />
+          </div>
         </div>
-        <CardTitle>
-          {step === 1 && 'Experience & Resume Upload'}
-          {step === 2 && 'Select your interests'}
-          {step === 3 && 'Choose your skills'}
-          {step === 4 && 'Target role & goals'}
-        </CardTitle>
-        <CardDescription>
-          {step === 1 && 'Upload resume or select level to auto-fill diagnostic'}
-          {step === 2 && 'Pick what excites you'}
-          {step === 3 && 'Select your existing tech stack'}
-          {step === 4 && 'Identify career goals'}
-        </CardDescription>
-      </CardHeader>
+      </div>
 
-      <CardContent className="min-h-[240px] space-y-4">
-        {step === 1 && (
-          <div className="space-y-4">
-            {/* Resume Upload Box */}
-            <div className="p-4 border-2 border-dashed border-indigo-200 hover:border-indigo-400 bg-indigo-50/40 hover:bg-indigo-50/70 rounded-2xl transition-all">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".pdf,.docx,.txt,.md"
-                onChange={(e) => e.target.files?.[0] && handleFileUpload(e.target.files[0])}
-                className="hidden"
-                id="resume-upload-input"
-              />
-
-              {!resumeFile ? (
-                <label
-                  htmlFor="resume-upload-input"
-                  className="flex flex-col items-center justify-center cursor-pointer text-center py-2"
-                >
-                  <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center mb-2 shadow-sm">
-                    <UploadCloud className="w-5 h-5" />
-                  </div>
-                  <span className="text-xs font-bold text-slate-900">
-                    Upload Resume for AI Diagnostic (PDF, DOCX, TXT)
-                  </span>
-                  <span className="text-[11px] text-slate-500 mt-0.5">
-                    Automatically extracts tech stack, experience level, and role alignment
-                  </span>
-                </label>
-              ) : (
-                <div className="flex items-center justify-between bg-white p-3 rounded-xl border border-indigo-200">
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <div className="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center shrink-0">
-                      <FileText className="w-4 h-4" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-xs font-bold text-slate-900 truncate">{resumeFile.name}</p>
-                      <p className="text-[10px] text-slate-400 font-mono">
-                        {(resumeFile.size / 1024).toFixed(1)} KB • Resume Loaded
-                      </p>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={removeResume}
-                    className="p-1 text-slate-400 hover:text-rose-600 rounded-md cursor-pointer"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-              )}
-
-              {parsingResume && (
-                <div className="mt-2 text-center text-xs text-indigo-600 font-semibold flex items-center justify-center gap-1.5 animate-pulse">
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  <span>Parsing resume content & extracting skills...</span>
-                </div>
-              )}
-            </div>
-
-            {/* Resume Parse Notification Banner */}
-            {resumeParseSuccess && (
-              <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-900 text-xs font-semibold flex items-center gap-2 animate-in fade-in">
-                <Sparkles className="w-4 h-4 text-emerald-600 shrink-0" />
-                <span>{resumeParseSuccess}</span>
-              </div>
-            )}
-
-            <Select
-              label="Experience Level"
-              value={experience}
-              onChange={(e) => setExperience(e.target.value)}
-              options={experienceOptions}
-            />
+      {/* ─── TWO-COLUMN WORKSPACE CANVAS ─── */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        {/* ── LEFT COMPANION TELEMETRY PANEL (4 COLS) ── */}
+        <div className="lg:col-span-4 bg-slate-50 border border-slate-200/90 rounded-3xl p-6 sm:p-7 space-y-6">
+          <div>
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 text-[11px] font-semibold mb-2 font-sans">
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>AI Diagnostic Telemetry</span>
+            </span>
+            <h2 className="text-lg font-bold text-slate-900 font-display">
+              Live Candidate Profile
+            </h2>
+            <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+              Our multi-agent engine dynamically evaluates your background in real-time.
+            </p>
           </div>
-        )}
 
-        {step === 2 && (
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-2">
-              {interestOptions.map((interest) => {
-                const selected = interests.includes(interest);
-                return (
-                  <button
-                    key={interest}
-                    onClick={() => toggleInterest(interest)}
-                    className={`px-3 py-2 text-xs font-medium rounded-lg border text-left transition-all cursor-pointer ${
-                      selected
-                        ? 'bg-indigo-50 border-indigo-600 text-indigo-700 font-bold'
-                        : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
+          {/* Stepper Timeline Navigation */}
+          <div className="space-y-2.5 border-t border-slate-200/80 pt-4">
+            {[
+              { num: 1, title: 'Experience & Resume', active: step === 1, done: step > 1 },
+              { num: 2, title: 'Engineering Domains', active: step === 2, done: step > 2 },
+              { num: 3, title: 'Technical Stack', active: step === 3, done: step > 3 },
+              { num: 4, title: 'Target Role & Goals', active: step === 4, done: step > 4 },
+            ].map((s) => (
+              <div
+                key={s.num}
+                className={`p-3 rounded-2xl flex items-center justify-between text-xs transition-all ${
+                  s.active
+                    ? 'bg-white border border-blue-600 shadow-xs font-bold text-slate-900 ring-2 ring-blue-600/10'
+                    : s.done
+                    ? 'bg-emerald-50/60 border border-emerald-200 text-emerald-800 font-medium'
+                    : 'bg-white/60 border border-slate-200/60 text-slate-500'
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <span
+                    className={`w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold ${
+                      s.active
+                        ? 'bg-blue-600 text-white'
+                        : s.done
+                        ? 'bg-emerald-600 text-white'
+                        : 'bg-slate-200 text-slate-600'
                     }`}
                   >
-                    {interest}
-                  </button>
-                );
-              })}
-            </div>
-            <div className="flex gap-2 pt-2 border-t border-slate-100">
-              <Input
-                placeholder="Add custom interest..."
-                value={customInterest}
-                onChange={(e) => setCustomInterest(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addCustomInterest())}
-              />
-              <Button type="button" variant="secondary" onClick={addCustomInterest}>
-                Add
-              </Button>
-            </div>
-            {interests.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 pt-1">
-                {interests.map((i) => (
-                  <span
-                    key={i}
-                    className="px-2 py-0.5 text-[11px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100 rounded-md"
-                  >
-                    {i}
+                    {s.done ? '✓' : s.num}
                   </span>
-                ))}
+                  <span>{s.title}</span>
+                </div>
+                {s.active && <span className="text-[10px] text-blue-600 font-bold uppercase tracking-wider">Current</span>}
               </div>
-            )}
+            ))}
           </div>
-        )}
 
-        {step === 3 && (
-          <div className="space-y-4">
-            {resumeFile && (
-              <div className="text-[11px] text-slate-500 font-medium flex items-center gap-1.5 bg-indigo-50/50 p-2 rounded-lg border border-indigo-100">
-                <Paperclip className="w-3.5 h-3.5 text-indigo-600" />
-                <span>Skills extracted from resume are pre-selected below. You can add or toggle more.</span>
+          {/* Live Extracted Telemetry Snapshot */}
+          <div className="bg-white border border-slate-200/80 rounded-2xl p-4 space-y-3 shadow-2xs">
+            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block font-sans">
+              Detected Parameters
+            </span>
+
+            <div className="space-y-2 text-xs">
+              <div className="flex justify-between items-center py-1 border-b border-slate-100">
+                <span className="text-slate-500 font-medium">Experience Level:</span>
+                <span className="font-bold text-slate-800">{experience}</span>
               </div>
-            )}
-
-            <div className="grid grid-cols-3 gap-2">
-              {skillOptions.map((skill) => {
-                const selected = skills.includes(skill);
-                return (
-                  <button
-                    key={skill}
-                    onClick={() => toggleSkill(skill)}
-                    className={`px-2.5 py-1.5 text-xs font-medium rounded-lg border text-center transition-all cursor-pointer ${
-                      selected
-                        ? 'bg-indigo-50 border-indigo-600 text-indigo-700 font-bold'
-                        : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
-                    }`}
-                  >
-                    {skill}
-                  </button>
-                );
-              })}
+              <div className="flex justify-between items-center py-1 border-b border-slate-100">
+                <span className="text-slate-500 font-medium">Interests Selected:</span>
+                <span className="font-bold text-blue-600">{interests.length} Domains</span>
+              </div>
+              <div className="flex justify-between items-center py-1 border-b border-slate-100">
+                <span className="text-slate-500 font-medium">Skills Staged:</span>
+                <span className="font-bold text-indigo-600">{skills.length} Competencies</span>
+              </div>
+              <div className="flex justify-between items-center py-1">
+                <span className="text-slate-500 font-medium">Target Role:</span>
+                <span className="font-bold text-emerald-700">{targetRole}</span>
+              </div>
             </div>
+          </div>
 
-            <div className="flex gap-2 pt-2 border-t border-slate-100">
-              <Input
-                placeholder="Add custom skill"
-                value={customSkill}
-                onChange={(e) => setCustomSkill(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addCustomSkill())}
-              />
-              <Button type="button" variant="secondary" onClick={addCustomSkill}>
-                Add
-              </Button>
-            </div>
+          <div className="flex items-center gap-2 text-[11px] text-slate-500 pt-2 font-medium">
+            <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+            <span>Row-Level Data Privacy Guaranteed</span>
+          </div>
+        </div>
 
-            {skills.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 pt-2">
-                {skills.map((s) => (
-                  <span
-                    key={s}
-                    className="px-2 py-0.5 text-[11px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100 rounded-md"
-                  >
-                    {s}
-                  </span>
-                ))}
+        {/* ── RIGHT MAIN INTERACTIVE STEP WORKSPACE (8 COLS) ── */}
+        <div className="lg:col-span-8 bg-white border border-slate-200/90 rounded-3xl p-6 sm:p-10 shadow-lg relative min-h-[540px] flex flex-col justify-between">
+          <div>
+            {/* ── STEP 1: EXPERIENCE & RESUME INTELLIGENCE ── */}
+            {step === 1 && (
+              <div className="space-y-6">
+                <div>
+                  <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-display">
+                    Experience &amp; Resume Intelligence
+                  </h1>
+                  <p className="text-xs sm:text-sm text-slate-500 mt-1 font-sans">
+                    Upload your resume to automatically extract your technical skills, or select your baseline level.
+                  </p>
+                </div>
+
+                {/* Dropzone Upload */}
+                <div className="p-6 border-2 border-dashed border-blue-200 hover:border-blue-400 bg-blue-50/40 hover:bg-blue-50/70 rounded-3xl transition-all duration-200">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".pdf,.docx,.txt,.md"
+                    onChange={(e) => e.target.files?.[0] && handleFileUpload(e.target.files[0])}
+                    className="hidden"
+                    id="resume-upload-input"
+                  />
+
+                  {!resumeFile ? (
+                    <label
+                      htmlFor="resume-upload-input"
+                      className="flex flex-col items-center justify-center cursor-pointer text-center py-4"
+                    >
+                      <div className="w-12 h-12 rounded-2xl bg-blue-600 text-white flex items-center justify-center mb-3 shadow-sm hover:scale-105 transition-transform">
+                        <UploadCloud className="w-6 h-6" />
+                      </div>
+                      <span className="text-sm font-bold text-slate-900 font-display">
+                        Drop your Resume here or click to browse
+                      </span>
+                      <span className="text-xs text-slate-500 mt-1 font-sans">
+                        PDF, DOCX, or TXT • Instant AI skill extraction &amp; ATS audit
+                      </span>
+                    </label>
+                  ) : (
+                    <div className="flex items-center justify-between p-2">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center">
+                          <FileText className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <div className="text-xs sm:text-sm font-bold text-slate-900">{resumeFile.name}</div>
+                          <div className="text-[11px] text-slate-500">{(resumeFile.size / 1024).toFixed(1)} KB • Ready for RAG evaluation</div>
+                        </div>
+                      </div>
+                      <button
+                        onClick={removeResume}
+                        className="p-2 rounded-xl text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+                        title="Remove resume"
+                      >
+                        <X className="w-5 h-5" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {parsingResume && (
+                  <div className="flex items-center gap-2 text-xs font-semibold text-blue-600 bg-blue-50 p-3 rounded-2xl border border-blue-200">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Parsing resume text &amp; isolating technical competencies...</span>
+                  </div>
+                )}
+
+                {resumeParseSuccess && (
+                  <div className="flex items-center gap-2 text-xs font-semibold text-emerald-700 bg-emerald-50 p-3 rounded-2xl border border-emerald-200">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span>{resumeParseSuccess}</span>
+                  </div>
+                )}
+
+                {/* Experience Level Cards Grid */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-3 font-sans">
+                    Or Choose Your Experience Baseline
+                  </label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {experienceList.map((item) => {
+                      const Icon = item.icon;
+                      const isSelected = experience === item.id;
+                      return (
+                        <button
+                          key={item.id}
+                          type="button"
+                          onClick={() => setExperience(item.id)}
+                          className={`p-4 rounded-2xl border text-left transition-all cursor-pointer flex items-start gap-3.5 ${
+                            isSelected
+                              ? 'bg-blue-50/80 border-blue-600 ring-2 ring-blue-600/20 shadow-xs'
+                              : 'bg-slate-50/70 border-slate-200 hover:bg-white hover:border-slate-300'
+                          }`}
+                        >
+                          <div className={`p-2.5 rounded-xl ${isSelected ? 'bg-blue-600 text-white' : 'bg-white text-slate-500 border border-slate-200'}`}>
+                            <Icon className="w-4 h-4" />
+                          </div>
+                          <div>
+                            <div className="text-xs font-bold text-slate-900">{item.title}</div>
+                            <div className="text-[11px] text-slate-500 mt-0.5">{item.desc}</div>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ── STEP 2: CORE ENGINEERING DOMAINS & INTERESTS ── */}
+            {step === 2 && (
+              <div className="space-y-6">
+                <div>
+                  <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-display">
+                    Select Your Engineering Domains
+                  </h1>
+                  <p className="text-xs sm:text-sm text-slate-500 mt-1 font-sans">
+                    Choose the technical specializations that align with your career ambitions.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {availableInterests.map((interest) => {
+                    const isSelected = interests.includes(interest);
+                    return (
+                      <button
+                        key={interest}
+                        type="button"
+                        onClick={() => toggleInterest(interest)}
+                        className={`p-4 rounded-2xl border text-left transition-all cursor-pointer flex items-center justify-between ${
+                          isSelected
+                            ? 'bg-blue-50/80 border-blue-600 ring-2 ring-blue-600/20 shadow-xs text-blue-950 font-bold'
+                            : 'bg-slate-50/70 border-slate-200 hover:bg-white text-slate-800 font-medium'
+                        }`}
+                      >
+                        <span className="text-xs sm:text-sm">{interest}</span>
+                        <div className={`w-5 h-5 rounded-full flex items-center justify-center transition-colors ${isSelected ? 'bg-blue-600 text-white' : 'border border-slate-300'}`}>
+                          {isSelected && <Check className="w-3 h-3" />}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Custom Interest Input */}
+                <div className="pt-2">
+                  <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-2 font-sans">
+                    Add Custom Specialization
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={customInterest}
+                      onChange={(e) => setCustomInterest(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addCustomInterest())}
+                      placeholder="e.g., Quantum Computing, Embedded Systems"
+                      className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 bg-slate-50/50 hover:bg-white"
+                    />
+                    <button
+                      type="button"
+                      onClick={addCustomInterest}
+                      className="px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold cursor-pointer flex items-center gap-1.5"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Add</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ── STEP 3: TECHNICAL COMPETENCIES & SKILLS ── */}
+            {step === 3 && (
+              <div className="space-y-6">
+                <div>
+                  <div className="flex items-center justify-between">
+                    <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-display">
+                      Verified Technical Skills
+                    </h1>
+                    <span className="text-xs font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-full border border-blue-200">
+                      {skills.length} Selected
+                    </span>
+                  </div>
+                  <p className="text-xs sm:text-sm text-slate-500 mt-1 font-sans">
+                    Select technologies you know or have used in past projects.
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap gap-2.5">
+                  {commonSkills.map((skill) => {
+                    const isSelected = skills.includes(skill);
+                    return (
+                      <button
+                        key={skill}
+                        type="button"
+                        onClick={() => toggleSkill(skill)}
+                        className={`px-4 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-2 ${
+                          isSelected
+                            ? 'bg-blue-600 text-white shadow-xs scale-105'
+                            : 'bg-slate-100 hover:bg-slate-200/80 text-slate-700 border border-slate-200'
+                        }`}
+                      >
+                        <span>{skill}</span>
+                        {isSelected ? <Check className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5 text-slate-400" />}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Custom Skill Input */}
+                <div className="pt-2">
+                  <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-2 font-sans">
+                    Add Custom Framework or Tool
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={customSkill}
+                      onChange={(e) => setCustomSkill(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addCustomSkill())}
+                      placeholder="e.g., Redis, LangChain, Kafka, Rust"
+                      className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 bg-slate-50/50 hover:bg-white"
+                    />
+                    <button
+                      type="button"
+                      onClick={addCustomSkill}
+                      className="px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold cursor-pointer flex items-center gap-1.5"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Add</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ── STEP 4: TARGET ROLE & OBJECTIVES ── */}
+            {step === 4 && (
+              <div className="space-y-6">
+                <div>
+                  <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-display">
+                    Target Role &amp; Objectives
+                  </h1>
+                  <p className="text-xs sm:text-sm text-slate-500 mt-1 font-sans">
+                    Tell us what engineering position you are pursuing so our RAG engine can compute your exact gap delta.
+                  </p>
+                </div>
+
+                {/* Popular Target Roles Grid */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-3 font-sans">
+                    Select Target Engineering Title
+                  </label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {popularRoles.map((item) => {
+                      const isSelected = targetRole === item.role;
+                      return (
+                        <button
+                          key={item.role}
+                          type="button"
+                          onClick={() => setTargetRole(item.role)}
+                          className={`p-4 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                            isSelected
+                              ? 'bg-blue-50/80 border-blue-600 ring-2 ring-blue-600/20 shadow-xs'
+                              : 'bg-slate-50/70 border-slate-200 hover:bg-white hover:border-slate-300'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between mb-1.5">
+                            <span className="text-xs font-bold text-slate-900">{item.role}</span>
+                            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200/60">
+                              {item.tag}
+                            </span>
+                          </div>
+                          <span className="text-[11px] text-slate-500">{item.desc}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Custom Target Role Type-In Input */}
+                  <div className="mt-3.5 pt-3 border-t border-slate-100">
+                    <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-2 font-sans">
+                      Or Type Your Custom Target Role
+                    </label>
+                    <input
+                      type="text"
+                      value={targetRole}
+                      onChange={(e) => setTargetRole(e.target.value)}
+                      placeholder="e.g. Embedded Robotics Engineer, NLP Research Scientist, SRE Lead"
+                      className="w-full px-4 py-3 rounded-2xl border border-slate-200 text-xs sm:text-sm text-slate-900 font-semibold focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 bg-slate-50/50 hover:bg-white transition-all shadow-2xs"
+                    />
+                  </div>
+                </div>
+
+                {/* Career Goals Radio Grid */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-3 font-sans">
+                    Primary Goal
+                  </label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    {careerGoalOptions.map((goal) => {
+                      const isSelected = careerGoal === goal;
+                      return (
+                        <button
+                          key={goal}
+                          type="button"
+                          onClick={() => setCareerGoal(goal)}
+                          className={`p-3 rounded-xl border text-left text-xs font-semibold transition-all cursor-pointer flex items-center justify-between ${
+                            isSelected
+                              ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
+                              : 'bg-slate-50 border-slate-200 hover:bg-white text-slate-700'
+                          }`}
+                        >
+                          <span>{goal}</span>
+                          {isSelected && <Check className="w-3.5 h-3.5 text-blue-400" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Custom Goal Type-In Input */}
+                  <div className="mt-3.5 pt-3 border-t border-slate-100">
+                    <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-2 font-sans">
+                      Or Type Your Custom Career Goal
+                    </label>
+                    <input
+                      type="text"
+                      value={careerGoal}
+                      onChange={(e) => setCareerGoal(e.target.value)}
+                      placeholder="e.g. Transition into AI within 4 months with a senior compensation package"
+                      className="w-full px-4 py-3 rounded-2xl border border-slate-200 text-xs sm:text-sm text-slate-900 font-semibold focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 bg-slate-50/50 hover:bg-white transition-all shadow-2xs"
+                    />
+                  </div>
+                </div>
               </div>
             )}
           </div>
-        )}
 
-        {step === 4 && (
-          <div className="space-y-4">
-            <Select
-              label="Target Role"
-              value={targetRole}
-              onChange={(e) => setTargetRole(e.target.value)}
-              options={targetRoleOptions}
-            />
+          {/* ─── BOTTOM WORKSPACE CONTROLS ─── */}
+          <div className="pt-8 mt-8 border-t border-slate-100 flex items-center justify-between">
+            <button
+              type="button"
+              onClick={handlePrev}
+              disabled={step === 1}
+              className="px-5 py-2.5 rounded-2xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors flex items-center gap-2"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>Back</span>
+            </button>
 
-            <Input
-              label="What do you want to achieve?"
-              placeholder="Get my first job"
-              value={careerGoal}
-              onChange={(e) => setCareerGoal(e.target.value)}
-            />
+            {step < 4 ? (
+              <button
+                type="button"
+                onClick={handleNext}
+                className="px-7 py-3 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer flex items-center gap-2"
+              >
+                <span>Continue to Step {step + 1}</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={startAnalysis}
+                className="px-8 py-3.5 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs sm:text-sm font-bold shadow-lg hover:shadow-xl transition-all duration-200 cursor-pointer flex items-center gap-2"
+              >
+                <Sparkles className="w-4 h-4 text-blue-200 animate-spin" />
+                <span>Generate My AI Career Architecture</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            )}
           </div>
-        )}
-      </CardContent>
-
-      <CardFooter className="flex justify-between">
-        <Button variant="secondary" onClick={handlePrev} disabled={step === 1}>
-          Back
-        </Button>
-
-        {step < 4 ? (
-          <Button onClick={handleNext}>Next Step</Button>
-        ) : (
-          <Button onClick={startAnalysis} variant="primary" className="font-bold">
-            <Zap className="w-4 h-4 mr-1.5" />
-            Analyze My Career
-          </Button>
-        )}
-      </CardFooter>
-    </Card>
+        </div>
+      </div>
+    </div>
   );
 }

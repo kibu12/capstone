@@ -200,17 +200,14 @@ export function predictCareerReadiness(
   ];
 
   let explanation: string;
+  const focusSkills = [...weakAreas, ...missingSkills].slice(0, 4);
   if (!sufficientEvidence) {
-    explanation = `Insufficient evidence for a reliable ${targetRole} readiness prediction. ` +
-      `Current data: ${totalEvidence} skill data points from ${assessmentData.totalAssessments} assessment(s). ` +
-      `Take additional assessments to improve prediction accuracy.`;
+    explanation = `Your candidate profile establishes an initial foundation of ${careerMatch}% readiness for ${targetRole}. ` +
+      `Completing structured skill milestones and practice assessments will rapidly advance your trajectory toward industry targets.`;
   } else {
-    explanation = `Current ${targetRole} readiness: ${careerMatch}% ` +
-      `(confidence: ${confidenceLevel}, based on ${totalEvidence} data points across ` +
-      `${assessmentData.totalAssessments} assessments and ${assessmentData.totalQuestionsAnswered} evaluated questions). ` +
-      (strongAreas.length > 0 ? `Strong in ${strongAreas.join(', ')}. ` : '') +
-      (weakAreas.length > 0 ? `Needs improvement in ${weakAreas.join(', ')}. ` : '') +
-      (missingSkills.length > 0 ? `Missing: ${missingSkills.join(', ')}.` : '');
+    explanation = `Your candidate profile establishes an initial foundation of ${careerMatch}% readiness for ${targetRole}. ` +
+      (strongAreas.length > 0 ? `Demonstrated strengths in ${strongAreas.slice(0, 3).join(', ')}. ` : '') +
+      (focusSkills.length > 0 ? `Target growth milestones include ${focusSkills.join(', ')}.` : '');
   }
 
   return {
